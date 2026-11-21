@@ -34,3 +34,23 @@ Vorschlag Bundle-ID (nur wenn Lino wählt, nicht registriert): `de.linolaske.rue
 - Eine Websuche kann das Fehlen einer Nutzung nicht beweisen, nur nichts finden.
 - Domainstatus ist eine Momentaufnahme; Registrierung macht nur Lino.
 - Kein Rechtsrat.
+
+---
+
+# Runde 2 (21.11.2026, Abend): „Keines der Vier“
+
+Lino hat alle vier Namen der Runde 1 abgelehnt. Die Runde 1 bestand aus deutschen Komposita (-kiste, -meister, -buch, -werk). Runde 2 geht bewusst in andere Richtungen: Redewendungen und Bilder aus dem Gebrauch von Ausrüstung statt Bezeichnungen für „Behälter“ oder „Zähler“. **Nichts registriert, reserviert oder veröffentlicht. Keine Verfügbarkeitsgarantie, Markenregister weiterhin nicht abgefragt.**
+
+Geprüft: 38 Kandidaten per iTunes-API. Kurze Alltagswörter (Patina, Spind, Zeug, Quiver, Tread, Cairn, Tally, Odo, Standzeit, Haltbar, Mileo, Tero, Kintsugi, Wearly, Seasoned, Ruvo) fielen durch: App-Store-Namenstreffer, bei Tread/Cairn/Odo sogar im Thema Reifen, Wandern, Kilometer. Hardwear fiel durch (Mountain Hardwear, Outdoor-Marke von Columbia, klingt gleich); Usus (450 GitHub-Repos, .de/.com belegt) auch.
+
+| Name | Idee | App Store DE/AT/CH/US (Namenstreffer) | GitHub (Repos / Konten) | .de / .com (RDAP) | Web |
+|---|---|---|---|---|---|
+| **Altgedient** | „altgedient“ = lange treu im Dienst; passt zu Schuhen, Kette, Helm gleichermaßen | 0 | 0 / 0 | frei / frei | kein Treffer als App, Marke oder Firma |
+| **Eingelaufen** | Schuhe, Reifen, Sattel sind „eingelaufen“ (eingefahren); auch „Training eingelaufen“ | 0 | 0 / 0 | frei / frei | kein Treffer |
+| **Gefährte** | Ausrüstung als Begleiter über viele Einheiten; Bundle ASCII `gefaehrte` | 0 | 4 / 1 (`gefaehrte`) | belegt / frei | kein Treffer im Sportkontext |
+| **Wellworn** | englisch „well-worn“, gut getragen; gleiche Idee wie Altgedient, international | 0 | 18 / 80 | belegt / belegt | kein Treffer; nahe Verwandte im Thema: WearLog, WearTracker, GearTracking (andere Namen) |
+| *Reserve:* Zeughaus | Arsenal/Lager für Ausrüstung | 0 | 7 / 3 | belegt / belegt | kein Sporttreffer; bekannter Begriff (Museen, Kinos), Verwechslung wahrscheinlich |
+
+Bundle-ID-Vorschläge (nur falls gewählt, nicht registriert): `de.linolaske.altgedient`, `de.linolaske.eingelaufen`, `de.linolaske.gefaehrte`, `de.linolaske.wellworn`.
+
+**Methode:** wie Runde 1 (iTunes Search API je Storefront, Treffer = Name beginnt mit dem Begriff vor „ - “ oder „:“; GitHub-Suche `in:name` / `in:login`; RDAP für .de und .com; `.app` nicht erreichbar, nicht geprüft). Zusätzlich je Name eine Websuche; sie liefert nur „nichts gefunden“, kein Beweis der Freiheit. **Grenzen:** wie oben (Markenregister DPMA/TMview/WIPO prüft Lino, Klassen 9 und 42, auch ähnlich klingende Schreibweisen; nicht gelistete oder reservierte App-Namen sind unsichtbar; Kein Rechtsrat). Besonders prüfen: „Altgedient“/„Eingelaufen“ sind gebräuchliche deutsche Wörter, daher ist Schutzfähigkeit als Marke eher schwach, dafür Kollision gering.
