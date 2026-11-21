@@ -3,6 +3,11 @@
 **Stand:** 21.11.2026 · Quelle der Wahrheit für den Arbeitsstand, bei jeder Änderung mitpflegen.
 **Arbeitstitel GearFlow – Name vorläufig.** Keine Bundle-ID, kein App-Store-Connect-Eintrag, keine Signierung mit Team, bis Lino E-01 entschieden hat.
 
+## Entscheidungen von Lino (21.11.2026)
+- **E-02:** Deployment Target **iOS 26+** (Swift 6, aktuelle SwiftData/ActivityKit).
+- **E-03:** GitHub **privat**, bis der Name steht. Repo: `MagicalWig34653/sportausruestung` (privat, vor dem Push mit gitleaks auf Geheimnisse geprüft). Kein öffentliches Repo, keine Lizenz bis zur Namensentscheidung.
+- **E-01:** Agent recherchiert 3–5 Namensvorschläge mit Kollisionsprüfung, Lino wählt. Ergebnis: `docs/NAMENSRECHERCHE.md` (4 Vorschläge, Quellen, Grenzen; ohne Verfügbarkeitsgarantie, Markenregister nicht abgefragt). **Wartet auf Linos Wahl.**
+
 ## Was steht
 | Bereich | Stand |
 |---|---|
@@ -19,9 +24,8 @@
 3. Danach M3 (mit Gerätespike S-1) und M5 parallel.
 
 ## Wartet auf Lino
-- **E-01** Produktname + Bundle-ID (blockiert M2).
-- **E-02** Deployment Target (Empfehlung iOS 26+).
-- **E-03** Repo-Sichtbarkeit/Lizenz (blockiert nur Push).
+- **E-01** Wahl aus den vier Vorschlägen in `docs/NAMENSRECHERCHE.md`, dann Bundle-ID (blockiert M2).
+- **E-03 (Rest)** nach der Namenswahl: öffentlich + Lizenz oder privat lassen.
 - **E-04** Gerätetests S-1 (nach M3) und S-2 (nach M7).
 
 ## Hinweise

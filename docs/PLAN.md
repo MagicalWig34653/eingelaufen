@@ -146,9 +146,9 @@ Testinfrastruktur: Kern mit Swift Testing; App-Tests mit In-Memory-Container (`-
 
 | Nr | Frage | Empfehlung | Blockiert |
 |---|---|---|---|
-| E-01 | Produktname und Bundle-ID | Ein Agent prüft 3–5 Namensvorschläge auf App-Store-/Markenkollisionen (nur Recherche, keine Registrierung); Lino wählt. Bundle-Präfix analog `de.linolaske.<name>`. | M2 (Xcode-Projekt, Signierung), alles danach |
-| E-02 | Deployment Target | **iOS 26+** wie CarbStock (Swift 6, aktuelle SwiftData-/ActivityKit-Fassung, eine Version Rückstand zu iOS 27). Alternative iOS 18+ laut Spec-Vorschlag: mehr Geräte, aber mehr Sonderwege. | M2 |
-| E-03 | Repo: lokal, GitHub privat oder öffentlich (AGPLv3 wie CarbStock) | GitHub privat bis zum Namen, danach entscheiden. | Push/CI (nicht die Arbeit) |
+| E-01 | Produktname und Bundle-ID | **Entschieden (Verfahren):** Agent recherchiert 3–5 Vorschläge mit Kollisionsprüfung, Lino wählt. Recherche liegt vor: `docs/NAMENSRECHERCHE.md`. Bundle-Präfix analog `de.linolaske.<name>`. **Offen: Linos Wahl.** | M2 (Xcode-Projekt, Signierung), alles danach |
+| E-02 | Deployment Target | **Entschieden 21.11.2026: iOS 26+.** | M2 |
+| E-03 | Repo: lokal, GitHub privat oder öffentlich (AGPLv3 wie CarbStock) | **Entschieden 21.11.2026: GitHub privat bis der Name steht.** Umgesetzt: privates Repo `MagicalWig34653/sportausruestung`. Öffentlich/Lizenz erst nach der Namenswahl neu entscheiden. | – |
 | E-04 | Gerätetests S-1/S-2 auf Linos iPhone (+ Watch für echte Workouts) | Ja, nach M3 bzw. M7, je ca. 1–2 Tage Alltag. | M3/M7-Abnahme |
 
 Hinweis für eine spätere Spec-Fassung (keine V1-Frage): App Review 5.1.3(ii) verbietet, „personal health information in iCloud“ zu speichern (PLATTFORM F-13). Die in Spec 10.6/16 vertagte CloudKit-Option muss das vorab klären.

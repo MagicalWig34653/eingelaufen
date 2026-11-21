@@ -9,6 +9,9 @@ Native iOS-App (Swift 6, SwiftUI, SwiftData, HealthKit, ActivityKit, WidgetKit, 
 4. `docs/PLATTFORM.md` – geprüfte Apple-Vorgaben F-01…F-15
 5. `docs/SPEC.md` – fachliche Spezifikation (nicht abschwächen)
 
+## Entscheidungen (21.11.2026)
+- Deployment Target **iOS 26+** (E-02). GitHub-Repo **privat** bis der Name steht (E-03), nie öffentlich ohne Linos Freigabe. Namen: nur aus `docs/NAMENSRECHERCHE.md`, Lino wählt (E-01).
+
 ## Harte Regeln
 - **Name und Bundle-ID sind offen.** Keine Bundle-ID erfinden, keine Team-Signierung (registriert App IDs im Developer-Portal), nichts in App Store Connect, keine Veröffentlichung. Bis E-01 nur `swift test` im Paket `Packages/GearCore`.
 - Rechenlogik gehört in `GearCore` (keine UI, keine Persistenz, kein HealthKit, keine Systemuhr) und wird test-first geschrieben. Jeder Spec-Pflichttest T-xx hat einen benannten Test.
