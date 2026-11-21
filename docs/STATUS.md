@@ -15,11 +15,11 @@
 | Architektur | `docs/ARCHITEKTUR.md` |
 | Plan, Meilensteine M0–M9, Testmatrix, Annahmen, Entscheidungen | `docs/PLAN.md` |
 | Apple-Vorgaben geprüft (HealthKit, Hintergrund, Notifications, Live Activities, SwiftData, Privacy) | `docs/PLATTFORM.md` |
-| Code | **keiner** (bewusst, Name offen) |
+| Code | Nur `Packages/GearCore` (namensunabhängig, `Packages/GearCore/test.sh` oder `swift test`): **M1b fertig** (InstallationGraph, LedgerBuilder, UsageQuery, LedgerProjection), 60 Tests grün. Kein Xcode-Projekt, keine Bundle-ID. |
 | Board | Todolino-Unterprojekt `1F2204B9-850F-4A39-8A56-7232BE9C754F`, Repo-Schlüssel `local/sportausruestung` |
 
 ## Nächste Schritte
-1. **M1 `GearCore`** kann sofort starten (namensunabhängig, nur `swift test`, kein Simulator). Reihenfolge: M1b Montage/Ledger/Usage → M1a Katalog/Mapping und M1c Engine/Inbox/Reconciler/Backup parallel.
+1. **M1 `GearCore`**: M1b ist fertig (T-01, T-02, T-03, T-04 Kern, T-08, T-09, T-11, T-13, I-10). Als Nächstes M1a Katalog/Mapping und M1c Engine/Inbox/Reconciler/Backup (parallel möglich). Offene Spec-Tests im Kern: T-05…T-07, T-10, T-12, T-14 gehören zu M1c.
 2. Nach E-01/E-02: M2 App-Fundament (XcodeGen, SchemaV1 vollständig, PersistenceActor).
 3. Danach M3 (mit Gerätespike S-1) und M5 parallel.
 
