@@ -1,18 +1,34 @@
 name: GearCore
 
+# Actions-Minuten sparen (Lino 23.11.2026, macOS kostet das Zehnfache): ein Lauf nur für Pushes auf main (und Release-Tags) mit Änderungen am Paket,
+# kein pull_request-Lauf (Pushes auf Feature-Branches lösen ohnehin nichts aus, das Paket läuft vor jedem Commit lokal mit `swift test`),
+# ein neuerer Push bricht einen laufenden Lauf ab, SwiftPM-Build-Ordner wird gecacht, Zeitlimit knapp (lokal ca. 15 s).
 on:
   push:
     branches: [main]
+    tags: ['v*']
     paths: ['Packages/GearCore/**', '.github/workflows/gearcore.yml']
-  pull_request:
-    paths: ['Packages/GearCore/**', '.github/workflows/gearcore.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: gearcore-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   test:
     runs-on: macos-latest
-    timeout-minutes: 20
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
+      - name: SwiftPM build cache
+        uses: actions/cache@v4
+        with:
+          path: Packages/GearCore/.build
+          key: swiftpm-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('Packages/GearCore/Package.swift') }}
+          restore-keys: swiftpm-${{ runner.os }}-${{ runner.arch }}-
       - name: Toolchain
         run: swift --version
       - name: swift test
