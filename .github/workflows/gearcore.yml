@@ -1,0 +1,20 @@
+name: GearCore
+
+on:
+  push:
+    branches: [main]
+    paths: ['Packages/GearCore/**', '.github/workflows/gearcore.yml']
+  pull_request:
+    paths: ['Packages/GearCore/**', '.github/workflows/gearcore.yml']
+
+jobs:
+  test:
+    runs-on: macos-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Toolchain
+        run: swift --version
+      - name: swift test
+        working-directory: Packages/GearCore
+        run: swift test
