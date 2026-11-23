@@ -19,6 +19,13 @@ public struct UsageSummary: Equatable, Sendable {
     public var uses: Int
     public var distanceMeters: Metric<Double>
     public var durationSeconds: Metric<Double>
+
+    /// Öffentlich, damit die App gespeicherte Summen wieder in Kernwerte überführen kann (Mapper).
+    public init(uses: Int, distanceMeters: Metric<Double>, durationSeconds: Metric<Double>) {
+        self.uses = uses
+        self.distanceMeters = distanceMeters
+        self.durationSeconds = durationSeconds
+    }
 }
 
 /// Ergebnis einer Fensterabfrage, bei der der Bezugspunkt fehlen kann.

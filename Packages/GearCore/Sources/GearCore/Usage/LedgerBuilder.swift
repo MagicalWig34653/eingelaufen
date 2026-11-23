@@ -32,6 +32,17 @@ public struct UsageLedgerEntry: Hashable, Codable, Sendable {
     public var activityID: UUID { key.activityID }
     public var segmentID: UUID? { key.segmentID }
     public var gearID: UUID { key.gearID }
+
+    /// Öffentlich, damit die App ein gespeichertes Ledger wieder in Kernwerte überführen kann (Mapper, I-10-Vergleich).
+    public init(key: LedgerKey, occurredAt: Date, distanceMeters: Double?, durationSeconds: Double?,
+                uses: Int, derivationVersion: Int) {
+        self.key = key
+        self.occurredAt = occurredAt
+        self.distanceMeters = distanceMeters
+        self.durationSeconds = durationSeconds
+        self.uses = uses
+        self.derivationVersion = derivationVersion
+    }
 }
 
 public enum LedgerIssue: Hashable, Sendable {
