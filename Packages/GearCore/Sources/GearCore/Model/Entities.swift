@@ -78,11 +78,15 @@ public struct ActivityRecord: Identifiable, Hashable, Codable, Sendable {
     public var distanceMeters: Double?
     public var durationSeconds: Double
     public var deletedAt: Date?
+    /// Nur wenn Metadaten/Quelle es belastbar liefern; nie aus Distanz oder Sporttyp geraten (SPEC 3.3).
+    public var isIndoor: Bool?
+    /// Zählt jede inhaltliche Änderung (Import-Update, Korrektur); schützt veraltete Aktionen (ARCHITEKTUR 3.1).
+    public var revision: Int
 
     public init(id: UUID = UUID(), source: ActivitySource = .manual, sourceID: String? = nil,
                 sportType: SportType, startAt: Date, endAt: Date,
                 distanceMeters: Double? = nil, durationSeconds: Double,
-                deletedAt: Date? = nil) {
+                deletedAt: Date? = nil, isIndoor: Bool? = nil, revision: Int = 1) {
         self.id = id
         self.source = source
         self.sourceID = sourceID
@@ -92,6 +96,8 @@ public struct ActivityRecord: Identifiable, Hashable, Codable, Sendable {
         self.distanceMeters = distanceMeters
         self.durationSeconds = durationSeconds
         self.deletedAt = deletedAt
+        self.isIndoor = isIndoor
+        self.revision = revision
     }
 }
 
@@ -119,6 +125,8 @@ public struct ActivitySegment: Identifiable, Hashable, Codable, Sendable {
 
 public enum AssignmentOrigin: String, Codable, Sendable {
     case manual, confirmedProposal, rule, preset
+    /// Automatisch, weil es in der Kategorie genau einen verfügbaren Gegenstand gab (Annahme P-09).
+    case soleCandidate
 }
 
 /// Direkte Zuordnung. `segmentID == nil` = Aktivitätsebene.
