@@ -130,6 +130,15 @@ struct BackupTests {
         #expect(object["data"] is [String: Any])
     }
 
+    @Test("Der Export ist byte-stabil auch für Mengen: Wochentage stehen immer sortiert im JSON")
+    func weekdaysAreEncodedSorted() throws {
+        var d = richDataset()
+        d.assignmentRules[0].conditions.weekdays = Set(1...7)
+        let json = String(decoding: try BackupCodec.encode(document(d)), as: UTF8.self)
+        #expect(json.contains("\"weekdays\":[1,2,3,4,5,6,7]"))
+        #expect(try BackupCodec.decode(BackupCodec.encode(document(d))).data == d)
+    }
+
     // MARK: Versionierung und Fehler
 
     @Test("Eine neuere Formatversion wird vor dem Dekodieren abgelehnt, nichts wird teilweise übernommen")
@@ -140,6 +149,20 @@ struct BackupTests {
         }
         #expect(BackupValidator.validate(document(formatVersion: 2)).contains(.unsupportedFormatVersion(2)))
         #expect(BackupValidator.validate(document(formatVersion: 0)).contains(.unsupportedFormatVersion(0)))
+    }
+
+    @Test("Ein Backup mit neuerem Datenmodell wird abgelehnt statt still Felder zu verlieren (SPEC 12: keine stillen Datenverluste)")
+    func newerSchemaRejected() throws {
+        let newer = BackupDocument.currentSchemaVersion + 1
+        var doc = document()
+        doc.appSchemaVersion = newer
+        #expect(throws: BackupError.unsupportedSchemaVersion(newer)) { try BackupCodec.decode(BackupCodec.encode(doc)) }
+        #expect(BackupValidator.validate(doc).contains(.unsupportedSchemaVersion(newer)))
+        #expect(!BackupValidator.isImportable(doc))
+        #expect(throws: BackupError.self) { try BackupRestore.restore(doc, into: GearDataset(), mode: .replace) }
+        // Ein Backup der aktuellen oder einer älteren Datenmodell-Version bleibt lesbar.
+        doc.appSchemaVersion = BackupDocument.currentSchemaVersion
+        #expect(BackupValidator.isImportable(doc))
     }
 
     @Test("Beschädigte oder fremde Dateien ergeben einen klaren Fehler statt eines Absturzes")

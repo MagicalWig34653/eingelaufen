@@ -75,6 +75,15 @@ public struct RuleConditions: Hashable, Codable, Sendable {
         self.isIndoor = isIndoor
         self.weekdays = weekdays
     }
+
+    private enum CodingKeys: String, CodingKey { case isIndoor, weekdays }
+
+    /// Mengen kodiert Swift in unbestimmter Reihenfolge; sortiert bleibt der Export (Backup) byte-stabil.
+    public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encodeIfPresent(isIndoor, forKey: .isIndoor)
+        try c.encodeIfPresent(weekdays.map { $0.sorted() }, forKey: .weekdays)
+    }
 }
 
 public struct AssignmentRule: Identifiable, Hashable, Codable, Sendable {

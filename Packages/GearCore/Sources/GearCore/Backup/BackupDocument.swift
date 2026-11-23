@@ -30,6 +30,8 @@ public enum BackupEntity: String, Codable, Sendable, CaseIterable {
 
 public enum BackupIssue: Hashable, Sendable {
     case unsupportedFormatVersion(Int)
+    /// Datenmodell der erzeugenden App ist neuer als dieses: Felder gingen still verloren, daher kein Import.
+    case unsupportedSchemaVersion(Int)
     case duplicateID(BackupEntity, UUID)
     case danglingReference(BackupEntity, UUID, missing: UUID)
     case segmentActivityMismatch(assignmentID: UUID)
@@ -48,11 +50,12 @@ public enum BackupIssue: Hashable, Sendable {
 public enum BackupError: Error, Equatable, Sendable {
     case malformed
     case unsupportedFormatVersion(Int)
+    case unsupportedSchemaVersion(Int)
     case invalid([BackupIssue])
 }
 
 public enum BackupCodec {
-    private struct Header: Decodable { var formatVersion: Int }
+    private struct Header: Decodable { var formatVersion: Int; var appSchemaVersion: Int? }
 
     /// Stabile Ausgabe (sortierte Schlüssel). Datumswerte als Sekunden seit 2001-01-01 UTC (Foundation-Standard),
     /// damit der Round-Trip verlustfrei ist.
@@ -69,6 +72,10 @@ public enum BackupCodec {
         guard (1...BackupDocument.currentFormatVersion).contains(header.formatVersion) else {
             throw BackupError.unsupportedFormatVersion(header.formatVersion)
         }
+        // Ein neueres Datenmodell kennt Felder, die dieses Schema beim Lesen verwerfen würde: vorher ablehnen.
+        if let schema = header.appSchemaVersion, schema > BackupDocument.currentSchemaVersion {
+            throw BackupError.unsupportedSchemaVersion(schema)
+        }
         guard let document = try? decoder.decode(BackupDocument.self, from: data) else { throw BackupError.malformed }
         return document
     }
@@ -79,6 +86,9 @@ public enum BackupValidator {
         var issues: [BackupIssue] = []
         if !(1...BackupDocument.currentFormatVersion).contains(document.formatVersion) {
             issues.append(.unsupportedFormatVersion(document.formatVersion))
+        }
+        if document.appSchemaVersion > BackupDocument.currentSchemaVersion {
+            issues.append(.unsupportedSchemaVersion(document.appSchemaVersion))
         }
         issues += validate(document.data)
         return issues
