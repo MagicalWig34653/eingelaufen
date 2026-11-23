@@ -15,7 +15,7 @@
 | Architektur | `docs/ARCHITEKTUR.md` |
 | Plan, Meilensteine M0–M9, Testmatrix, Annahmen, Entscheidungen | `docs/PLAN.md` |
 | Apple-Vorgaben geprüft (HealthKit, Hintergrund, Notifications, Live Activities, SwiftData, Privacy) | `docs/PLATTFORM.md` |
-| Code | Nur `Packages/GearCore` (namensunabhängig, `Packages/GearCore/test.sh` oder `swift test`): **M1 vollständig im Kern**: M1a (Katalog, HealthKit-Mapping, Vorlagen), M1b (InstallationGraph, LedgerBuilder, UsageQuery, LedgerProjection), M1c (AssignmentEngine, Inbox-Reducer, Korrektur/Regel-Lernen, ImportReconciler, Backup v1 mit Validator, Vorschau und Wiederherstellen). **164 Tests in 10 Suites grün, Zeilenabdeckung 96,9 %** (Ziel ≥ 90 %). T-01…T-14 haben je einen benannten Test. Kein Xcode-Projekt, keine Bundle-ID. |
+| Code | Nur `Packages/GearCore` (namensunabhängig, `Packages/GearCore/test.sh` oder `swift test`): **M1 vollständig im Kern**: M1a (Katalog, HealthKit-Mapping, Vorlagen), M1b (InstallationGraph, LedgerBuilder, UsageQuery, LedgerProjection), M1c (AssignmentEngine, Inbox-Reducer, Korrektur/Regel-Lernen, ImportReconciler, Backup v1 mit Validator, Vorschau und Wiederherstellen). **170 Tests in 10 Suites grün, Zeilenabdeckung 97,0 %** (Stand nach Gegenreview 23.11.) (Ziel ≥ 90 %). T-01…T-14 haben je einen benannten Test. Kein Xcode-Projekt, keine Bundle-ID. |
 | Board | Todolino-Unterprojekt `1F2204B9-850F-4A39-8A56-7232BE9C754F`, Repo-Schlüssel `local/sportausruestung` |
 
 ## Nächste Schritte
@@ -29,4 +29,5 @@
 - **E-04** Gerätetests S-1 (nach M3) und S-2 (nach M7).
 
 ## Hinweise
+- CI-Workflow `.github/workflows/gearcore.yml` (swift test, macos-latest) liegt im Repo, der Lauf startet aber nicht: GitHub meldet „recent account payments have failed or your spending limit needs to be increased“ (Billing-Sache von Lino, kein Codefehler).
 - Mac-Platte war am 21.11. rot (22,5 GB frei): Xcode-/Simulator-Arbeit erst bei Platte ≥ Gelb; DerivedData nach `build/`.
