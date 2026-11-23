@@ -31,7 +31,7 @@
 ## Hinweise
 - Bekannte Grenze M2: Der Outbox-Handler ist bis M3/M4 ein No-op (`NoSideEffects`); der Health-Schritt im Onboarding bietet nur „Später“; UI-Test-Fixtures (`-UITestFixture`) gibt es nur in DEBUG-Builds.
 - Simulator: Dunkel/XXL gehen nur systemweit (`xcrun simctl ui … appearance|content_size`), Launch-Argumente wirken nicht; das macht `scripts/screenshots.sh`.
-- CI-Workflow `.github/workflows/gearcore.yml` (swift test, macos-latest) liegt im Repo, der Lauf startet aber nicht: GitHub meldet „recent account payments have failed or your spending limit needs to be increased“ (Billing-Sache von Lino, kein Codefehler).
+- CI-Workflow `.github/workflows/gearcore.yml` (swift test, macos-latest, nur bei Änderungen in `Packages/GearCore`): seit dem öffentlichen Repo grün (Lauf zu 02993a9, 23.11.). Die App-Tests und UI-Tests laufen nur lokal (Xcode 26/Simulator), nicht in der CI.
 - Mac-Platte war am 21.11. rot (22,5 GB frei): Xcode-/Simulator-Arbeit erst bei Platte ≥ Gelb; DerivedData nach `build/`.
 
 ## Veröffentlichung (E-03, 23.11.2026)
