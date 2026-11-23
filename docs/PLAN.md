@@ -1,8 +1,8 @@
 # Umsetzungsplan (Planungsstand)
 
-**Stand:** 21.11.2026 · Spec `docs/SPEC.md` v1.0 (unverändert übernommen) · Architektur `docs/ARCHITEKTUR.md` · Apple-Vorgaben `docs/PLATTFORM.md`
-**Arbeitstitel:** GearFlow, ausdrücklich **vorläufig**. Kein Produktname, keine Bundle-ID, kein App-Store-Connect-Eintrag festgelegt.
-**Todolino:** Unterprojekt „GearFlow (Arbeitstitel – Name vorläufig)“ unter Vibecoding, `1F2204B9-850F-4A39-8A56-7232BE9C754F`, Repo-Schlüssel `local/sportausruestung`.
+**Stand:** 23.11.2026 · Spec `docs/SPEC.md` v1.0 (unverändert übernommen) · Architektur `docs/ARCHITEKTUR.md` · Apple-Vorgaben `docs/PLATTFORM.md`
+**Name:** **Eingelaufen** (Lino, 23.11.2026, Frage 3555E3BC), Bundle-ID `de.linolaske.eingelaufen`. Arbeitstitel GearFlow entfällt. Kein App-Store-Connect-Eintrag, keine App-ID im Developer-Portal.
+**Todolino:** Unterprojekt „Eingelaufen“ (früher GearFlow) unter Vibecoding, `1F2204B9-850F-4A39-8A56-7232BE9C754F`, Repo-Schlüssel `local/sportausruestung`.
 
 ---
 
@@ -47,7 +47,7 @@ Abhängigkeiten in Klammern. „Namensunabhängig“ heißt: kann vor E-01 start
 - Parallelisierbar in 3 Worker-Karten: (a) Katalog+Mapping, (b) Montage+Ledger+Usage, (c) Engine+Inbox+Reconciler+Backup. (b) zuerst, weil (c) darauf aufbaut.
 - **DoD:** `swift test` grün, jede Spec-Pflicht-ID T-xx hat mindestens einen benannten Test, Abdeckung des Kerns ≥ 90 % Zeilen.
 
-### M2 App-Fundament (M0, M1)
+### M2 App-Fundament (M0, M1) – **umgesetzt 23.11.2026** (Commits 02993a9, db47f16)
 - XcodeGen-Projekt, 3 Tabs + Einstellungen-Button, Design-Tokens, Dynamic Type/Dark Mode von Anfang an.
 - `SchemaV1` vollständig für **alle** Entitäten (damit M3–M8 parallel ohne Schemakonflikt arbeiten), `PersistenceActor`, Befehlsschicht, Outbox, Mapper Kern↔SwiftData.
 - Ausrüstung anlegen (Vorlage → Name → Speichern), bearbeiten, Lebenszyklus, Archiv; leerer Zustand ohne Statistiken (Spec 1.3); Onboarding-Gerüst (3 Schritte, Health-Schritt zunächst „Später“).
@@ -146,9 +146,9 @@ Testinfrastruktur: Kern mit Swift Testing; App-Tests mit In-Memory-Container (`-
 
 | Nr | Frage | Empfehlung | Blockiert |
 |---|---|---|---|
-| E-01 | Produktname und Bundle-ID | **Entschieden (Verfahren):** Agent recherchiert 3–5 Vorschläge mit Kollisionsprüfung, Lino wählt. Recherche liegt vor: `docs/NAMENSRECHERCHE.md`. Bundle-Präfix analog `de.linolaske.<name>`. **Offen: Linos Wahl.** | M2 (Xcode-Projekt, Signierung), alles danach |
+| E-01 | Produktname und Bundle-ID | **Entschieden 23.11.2026: „Eingelaufen“, Bundle-ID `de.linolaske.eingelaufen`** (Lino, Frage 3555E3BC; Recherche `docs/NAMENSRECHERCHE.md`). Signierung nur lokal/automatisch für den Simulator, keine App-ID im Portal. | M2 (Xcode-Projekt, Signierung), alles danach |
 | E-02 | Deployment Target | **Entschieden 21.11.2026: iOS 26+.** | M2 |
-| E-03 | Repo: lokal, GitHub privat oder öffentlich (AGPLv3 wie CarbStock) | **Entschieden 21.11.2026: GitHub privat bis der Name steht.** Umgesetzt: privates Repo `MagicalWig34653/sportausruestung`. Öffentlich/Lizenz erst nach der Namenswahl neu entscheiden. | – |
+| E-03 | Repo: lokal, GitHub privat oder öffentlich (AGPLv3 wie CarbStock) | **Entschieden 23.11.2026 (Lino, Frage BDCE15A9, wörtlich „Namen ändern und dann veröffentlichen“).** Lesart des Brains: GitHub-Repo `MagicalWig34653/sportausruestung` wird in `eingelaufen` umbenannt und danach öffentlich gemacht, Lizenz AGPL-3.0-or-later (wie CarbStock und Medikamenten-Tracker). Reihenfolge: (1) Historie auf Secrets/Pfade/private Daten prüfen, bei Fund nichts veröffentlichen; (2) LICENSE + README-Zeile; (3) Umbenennen, origin anpassen; (4) nur bei sauberer Prüfung öffentlich. Lokaler Ordner bleibt `sportausruestung`. App Store Connect/Portal bleiben tabu. | – |
 | E-04 | Gerätetests S-1/S-2 auf Linos iPhone (+ Watch für echte Workouts) | Ja, nach M3 bzw. M7, je ca. 1–2 Tage Alltag. | M3/M7-Abnahme |
 
 Hinweis für eine spätere Spec-Fassung (keine V1-Frage): App Review 5.1.3(ii) verbietet, „personal health information in iCloud“ zu speichern (PLATTFORM F-13). Die in Spec 10.6/16 vertagte CloudKit-Option muss das vorab klären.
