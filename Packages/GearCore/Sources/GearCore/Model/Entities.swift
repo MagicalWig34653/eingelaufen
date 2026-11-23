@@ -21,14 +21,20 @@ public struct GearItem: Identifiable, Hashable, Codable, Sendable {
     public var purchaseDate: Date?
     public var status: GearStatus
     public var createdAt: Date
+    /// Kategorie/Unterkategorie aus dem Katalog (M1a); Standard „Sonstige“, damit bestehende Aufrufe gültig bleiben.
+    public var category: SportCategory
+    public var subtype: SportSubtype?
 
     public init(id: UUID = UUID(), name: String, purchaseDate: Date? = nil,
-                status: GearStatus = .active, createdAt: Date = Date(timeIntervalSince1970: 0)) {
+                status: GearStatus = .active, createdAt: Date = Date(timeIntervalSince1970: 0),
+                category: SportCategory = .other, subtype: SportSubtype? = nil) {
         self.id = id
         self.name = name
         self.purchaseDate = purchaseDate
         self.status = status
         self.createdAt = createdAt
+        self.category = category
+        self.subtype = subtype
     }
 }
 
