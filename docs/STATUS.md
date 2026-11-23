@@ -1,6 +1,6 @@
 # Status und Übergabe
 
-**Stand:** 21.11.2026 · Quelle der Wahrheit für den Arbeitsstand, bei jeder Änderung mitpflegen.
+**Stand:** 23.11.2026 · Quelle der Wahrheit für den Arbeitsstand, bei jeder Änderung mitpflegen.
 **Arbeitstitel GearFlow – Name vorläufig.** Keine Bundle-ID, kein App-Store-Connect-Eintrag, keine Signierung mit Team, bis Lino E-01 entschieden hat.
 
 ## Entscheidungen von Lino (21.11.2026)
@@ -15,11 +15,11 @@
 | Architektur | `docs/ARCHITEKTUR.md` |
 | Plan, Meilensteine M0–M9, Testmatrix, Annahmen, Entscheidungen | `docs/PLAN.md` |
 | Apple-Vorgaben geprüft (HealthKit, Hintergrund, Notifications, Live Activities, SwiftData, Privacy) | `docs/PLATTFORM.md` |
-| Code | Nur `Packages/GearCore` (namensunabhängig, `Packages/GearCore/test.sh` oder `swift test`): **M1b fertig** (InstallationGraph, LedgerBuilder, UsageQuery, LedgerProjection), 60 Tests grün. Kein Xcode-Projekt, keine Bundle-ID. |
+| Code | Nur `Packages/GearCore` (namensunabhängig, `Packages/GearCore/test.sh` oder `swift test`): **M1 vollständig im Kern**: M1a (Katalog, HealthKit-Mapping, Vorlagen), M1b (InstallationGraph, LedgerBuilder, UsageQuery, LedgerProjection), M1c (AssignmentEngine, Inbox-Reducer, Korrektur/Regel-Lernen, ImportReconciler, Backup v1 mit Validator, Vorschau und Wiederherstellen). **164 Tests in 10 Suites grün, Zeilenabdeckung 96,9 %** (Ziel ≥ 90 %). T-01…T-14 haben je einen benannten Test. Kein Xcode-Projekt, keine Bundle-ID. |
 | Board | Todolino-Unterprojekt `1F2204B9-850F-4A39-8A56-7232BE9C754F`, Repo-Schlüssel `local/sportausruestung` |
 
 ## Nächste Schritte
-1. **M1 `GearCore`**: M1b ist fertig (T-01, T-02, T-03, T-04 Kern, T-08, T-09, T-11, T-13, I-10). Als Nächstes M1a Katalog/Mapping und M1c Engine/Inbox/Reconciler/Backup (parallel möglich). Offene Spec-Tests im Kern: T-05…T-07, T-10, T-12, T-14 gehören zu M1c.
+1. **M1 `GearCore`**: Kern fertig, Abnahme durch Lino steht aus (Board M1/M1a/M1c). Bekannte Grenzen: der Reconciler übernimmt bei Ersatz (P-05) noch keine Segmente (kommt mit M3); Annahme P-09 (ein einziger verfügbarer Kandidat wird automatisch zugeordnet) ist über `EnginePolicy.autoAssignSoleCandidate` abschaltbar und wartet auf Linos Bestätigung; Backup enthält kein Ledger (wird nach dem Wiederherstellen neu gebaut), `ImportCursor`/`AppSettings` gehören zur App.
 2. Nach E-01/E-02: M2 App-Fundament (XcodeGen, SchemaV1 vollständig, PersistenceActor).
 3. Danach M3 (mit Gerätespike S-1) und M5 parallel.
 
