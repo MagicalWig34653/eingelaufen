@@ -125,7 +125,7 @@ public struct ActivitySegment: Identifiable, Hashable, Codable, Sendable {
 
 public enum AssignmentOrigin: String, Codable, Sendable {
     case manual, confirmedProposal, rule, preset
-    /// Automatisch, weil es in der Kategorie genau einen verfügbaren Gegenstand gab (Annahme P-09).
+    /// Automatisch, weil es in der Kategorie genau einen verfügbaren Gegenstand gab (nur mit der Option P-09, Standard aus).
     case soleCandidate
 }
 

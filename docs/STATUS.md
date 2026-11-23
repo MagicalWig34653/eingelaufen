@@ -19,7 +19,7 @@
 | Board | Todolino-Unterprojekt `1F2204B9-850F-4A39-8A56-7232BE9C754F`, Repo-Schlüssel `local/sportausruestung` |
 
 ## Nächste Schritte
-1. **M1 `GearCore`**: Kern fertig, Abnahme durch Lino steht aus (Board M1/M1a/M1c). Bekannte Grenzen: der Reconciler übernimmt bei Ersatz (P-05) noch keine Segmente (kommt mit M3); Annahme P-09 (ein einziger verfügbarer Kandidat wird automatisch zugeordnet) ist über `EnginePolicy.autoAssignSoleCandidate` abschaltbar und wartet auf Linos Bestätigung; Backup enthält kein Ledger (wird nach dem Wiederherstellen neu gebaut), `ImportCursor`/`AppSettings` gehören zur App.
+1. **M1 `GearCore`**: Kern fertig, Abnahme durch Lino steht aus (Board M1/M1a/M1c). Bekannte Grenzen: der Reconciler übernimmt bei Ersatz (P-05) noch keine Segmente (kommt mit M3); Annahme P-09 (ein einziger verfügbarer Kandidat wird automatisch zugeordnet) ist von der Spec nicht gedeckt (6.2/17: automatisch nur explizite Regeln und Presets): `EnginePolicy.autoAssignSoleCandidate` steht seit dem Gegenreview auf **`false`**, der einzige Kandidat wird nur vorgeschlagen; die Option bleibt und wird nur auf Linos ausdrückliche Entscheidung eingeschaltet; Backup enthält kein Ledger (wird nach dem Wiederherstellen neu gebaut), `ImportCursor`/`AppSettings` gehören zur App.
 2. Nach E-01/E-02: M2 App-Fundament (XcodeGen, SchemaV1 vollständig, PersistenceActor).
 3. Danach M3 (mit Gerätespike S-1) und M5 parallel.
 

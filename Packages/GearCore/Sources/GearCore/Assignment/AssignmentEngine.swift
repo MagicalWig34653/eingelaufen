@@ -2,7 +2,8 @@ import Foundation
 
 // Regelbasierte Zuordnungs-Engine (SPEC 6.2, ARCHITEKTUR 6.1). Rein: keine Systemuhr, kein Standort, kein ML.
 // Reihenfolge exakt nach Spec: explizit (Regel, Standard-Preset, eindeutiges Preset) → konservative Heuristik.
-// Reine Heuristik wird nie als Gewissheit ausgegeben: ohne Regel automatisch nur bei genau einem Kandidaten (P-09).
+// Reine Heuristik wird nie als Gewissheit ausgegeben (SPEC 6.2, 17): ohne Regel/Preset wird nur vorgeschlagen oder gefragt.
+// Ein einziger Kandidat wird standardmäßig nur vorgeschlagen; automatisch bucht ihn nur die ausdrückliche Option (P-09).
 
 public enum AssignmentDecision: Hashable, Sendable {
     /// Nur bei expliziter Information oder genau einem Kandidaten.
@@ -28,14 +29,16 @@ public struct ConfirmedAssignment: Hashable, Codable, Sendable {
 
 /// Umkehrbare Planungsannahmen der Engine.
 public struct EnginePolicy: Hashable, Sendable {
-    /// P-09: Genau ein verfügbarer Gegenstand der Kategorie wird ohne Nachfrage zugeordnet (Null-Interaktionsfall, Persona 2.1).
+    /// P-09 (Option, Standard aus): Genau ein verfügbarer Gegenstand der Kategorie wird ohne Nachfrage zugeordnet.
+    /// Die Spec deckt das nicht: automatisch nur explizite Regeln/Presets (6.2, 17), bei Heuristik nur Vorschlag.
+    /// Standard daher `false`; die App darf es nur auf Linos ausdrückliche Entscheidung einschalten.
     public var autoAssignSoleCandidate: Bool
     /// Wie viele jüngste bestätigte Zuordnungen die Gewohnheit betrachtet.
     public var historyWindow: Int
     /// Mindestanzahl übereinstimmender Bestätigungen für einen Vorschlag.
     public var minHistory: Int
 
-    public init(autoAssignSoleCandidate: Bool = true, historyWindow: Int = 3, minHistory: Int = 2) {
+    public init(autoAssignSoleCandidate: Bool = false, historyWindow: Int = 3, minHistory: Int = 2) {
         self.autoAssignSoleCandidate = autoAssignSoleCandidate
         self.historyWindow = historyWindow
         self.minHistory = minHistory

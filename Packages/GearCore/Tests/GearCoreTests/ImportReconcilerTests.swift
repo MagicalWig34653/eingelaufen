@@ -23,9 +23,13 @@ private func workout(_ sourceID: String, start: Date, hours: Double = 1, distanc
 
 /// Der Startwert folgt dem Datenstand, damit aufeinanderfolgende Läufe nie dieselbe UUID vergeben (Datensätze
 /// wachsen nur, Löschung = Tombstone) und gleiche Eingaben trotzdem gleiche IDs ergeben.
-private func reconcile(_ d: GearDataset, _ batch: ImportBatch) -> ReconcileOutput {
+///
+/// Die meisten Tests prüfen Import-Mechanik und buchen deshalb über die ausdrückliche Option „einziger Kandidat“.
+/// Das Standardverhalten (nur vorschlagen, P-09) deckt `soleCandidateDefaultOnlySuggests` ab.
+private let soleAuto = EnginePolicy(autoAssignSoleCandidate: true)
+private func reconcile(_ d: GearDataset, _ batch: ImportBatch, policy: EnginePolicy = soleAuto) -> ReconcileOutput {
     let ids = Ids(start: 20_000 + 1_000 * (d.activities.count + d.assignments.count + d.pendings.count))
-    return ImportReconciler.reconcile(d, batch, now: now, makeID: ids.next)
+    return ImportReconciler.reconcile(d, batch, now: now, policy: policy, makeID: ids.next)
 }
 
 private func twoShoes() -> GearDataset {
@@ -226,16 +230,35 @@ struct ImportReconcilerTests {
 
     // MARK: Entscheidungen für neue Aktivitäten
 
-    @Test("Eindeutige Aktivität: automatisch zugeordnet, ohne Posteingang (Null-Interaktionsfall)")
+    @Test("Explizite Regel: automatisch zugeordnet, ohne Posteingang (Null-Interaktionsfall, Standardrichtlinie)")
     func zeroInteractionCase() throws {
-        var d = GearDataset(); d.gear = [item(shoesA, .running)]
-        let out = reconcile(d, ImportBatch(upserts: [workout("W1", start: day(1))]))
+        var d = twoShoes()
+        d.assignmentRules = [AssignmentRule(sportType: run, gearIDs: [shoesA])]
+        let out = reconcile(d, ImportBatch(upserts: [workout("W1", start: day(1))]), policy: EnginePolicy())
         let a = try #require(out.dataset.activities.first)
         #expect(out.dataset.assignments.map(\.gearID) == [shoesA])
-        #expect(out.dataset.assignments.first?.origin == .soleCandidate)
+        #expect(out.dataset.assignments.first?.origin == .rule)
         #expect(out.dataset.assignments.first?.activityID == a.id)
         #expect(out.dataset.pendings.isEmpty)
         #expect(out.autoAssigned == [a.id])
+    }
+
+    @Test("P-09: Ein einziger Kandidat ohne Regel wird standardmäßig nur vorgeschlagen, nicht gebucht")
+    func soleCandidateDefaultOnlySuggests() throws {
+        var d = GearDataset(); d.gear = [item(shoesA, .running)]
+        let out = reconcile(d, ImportBatch(upserts: [workout("W1", start: day(1))]), policy: EnginePolicy())
+        let p = try #require(out.dataset.pendings.first)
+        #expect(p.state == .suggested && p.proposedGearIDs == [shoesA] && p.reason == .soleCandidate)
+        #expect(out.dataset.assignments.isEmpty && ledger(out.dataset).isEmpty && out.autoAssigned.isEmpty)
+    }
+
+    @Test("P-09: Mit eingeschalteter Option wird der einzige Kandidat gebucht (Ursprung soleCandidate)")
+    func soleCandidateOptInAutoAssigns() throws {
+        var d = GearDataset(); d.gear = [item(shoesA, .running)]
+        let out = reconcile(d, ImportBatch(upserts: [workout("W1", start: day(1))]))
+        #expect(out.dataset.assignments.map(\.gearID) == [shoesA])
+        #expect(out.dataset.assignments.first?.origin == .soleCandidate)
+        #expect(out.dataset.pendings.isEmpty && out.autoAssigned.count == 1)
     }
 
     @Test("Mehrere Kandidaten: offener Eintrag zur Nachfrage, noch keine Buchung")
@@ -272,7 +295,7 @@ struct ImportReconcilerTests {
         var d = GearDataset(); d.gear = [item(shoesA, .running)]
         let manual = ActivityRecord(id: id(950), source: .manual, sportType: run, startAt: day(2), endAt: day(2, hour: 1),
                                     distanceMeters: nil, durationSeconds: 3_600)
-        let out = ImportReconciler.addManual(manual, to: d, now: now, makeID: Ids().next)
+        let out = ImportReconciler.addManual(manual, to: d, now: now, policy: soleAuto, makeID: Ids().next)
         #expect(out.dataset.activities == [manual])
         #expect(out.dataset.assignments.map(\.gearID) == [shoesA])
         #expect(ledger(out.dataset).first?.distanceMeters == nil)

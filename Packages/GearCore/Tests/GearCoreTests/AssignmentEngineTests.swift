@@ -34,6 +34,11 @@ private func decide(_ a: ActivityRecord, _ c: AssignmentContext) -> AssignmentDe
     AssignmentEngine.decide(for: a, context: c)
 }
 
+/// Standard seit Review (P-09 nicht von der Spec gedeckt): ein einziger Kandidat wird nur vorgeschlagen.
+private func sole(_ g: UUID) -> AssignmentDecision {
+    .propose(primary: [g], alternatives: [], reason: .soleCandidate, confidence: .medium)
+}
+
 @Suite("AssignmentEngine (SPEC 6.2, T-12)")
 struct AssignmentEngineTests {
 
@@ -110,8 +115,7 @@ struct AssignmentEngineTests {
     func t12_inactiveStatusesExcluded() {
         for status in [GearStatus.stored, .retired, .sold, .disposed, .lost, .archived] {
             let c = context(gear: [item(shoesA, .running, status: status), item(shoesB, .running)])
-            #expect(decide(activity(1, start: day(5), sport: run), c)
-                    == .autoAssign(gear: [shoesB], reason: .soleCandidate, confidence: .high), "\(status)")
+            #expect(decide(activity(1, start: day(5), sport: run), c) == sole(shoesB), "\(status)")
         }
     }
 
@@ -121,8 +125,7 @@ struct AssignmentEngineTests {
         let changes = [GearStatusChange(gearID: shoesA, status: .active, effectiveAt: day(0)),
                        GearStatusChange(gearID: shoesA, status: .stored, effectiveAt: day(10))]
         let c = context(gear: gear, statusChanges: changes)
-        #expect(decide(activity(1, start: day(5), sport: run), c)
-                == .autoAssign(gear: [shoesA], reason: .soleCandidate, confidence: .high))
+        #expect(decide(activity(1, start: day(5), sport: run), c) == sole(shoesA))
         #expect(decide(activity(2, start: day(12), sport: run), c) == .noGear)
     }
 
@@ -130,8 +133,7 @@ struct AssignmentEngineTests {
     func t12_notYetPurchased() {
         let c = context(gear: [item(shoesA, .running, purchase: day(20))])
         #expect(decide(activity(1, start: day(5), sport: run), c) == .noGear)
-        #expect(decide(activity(2, start: day(25), sport: run), c)
-                == .autoAssign(gear: [shoesA], reason: .soleCandidate, confidence: .high))
+        #expect(decide(activity(2, start: day(25), sport: run), c) == sole(shoesA))
     }
 
     @Test("Eine Regel mit teils nicht verfügbaren Mitgliedern wird nur vorgeschlagen, nie automatisch")
@@ -176,23 +178,29 @@ struct AssignmentEngineTests {
 
     // MARK: Heuristik, konservativ
 
-    @Test("Ein einziger passender Kandidat wird zugeordnet, die Kette im Fahrrad zählt nicht als Kandidat")
+    @Test("Ein einziger passender Kandidat wird vorgeschlagen, die Kette im Fahrrad zählt nicht als Kandidat")
     func soleCandidateIgnoresMountedComponents() {
         let gear = [item(bikeA, .cycling), item(chain, .cycling)]
         let mounted = [mount(chain, in: bikeA, from: day(0))]
-        #expect(decide(activity(1, start: day(5)), context(gear: gear, installations: mounted))
-                == .autoAssign(gear: [bikeA], reason: .soleCandidate, confidence: .high))
+        #expect(decide(activity(1, start: day(5)), context(gear: gear, installations: mounted)) == sole(bikeA))
         // Ausgebaut zum Aktivitätszeitpunkt: dann ist die Kette wieder ein eigener Kandidat.
         let unmounted = [mount(chain, in: bikeA, from: day(0), to: day(3))]
         #expect(decide(activity(1, start: day(5)), context(gear: gear, installations: unmounted))
                 == .choose(candidates: [bikeA, chain], reason: .multipleCandidates))
     }
 
-    @Test("Policy kann das automatische Zuordnen eines einzigen Kandidaten abschalten (umkehrbar, Annahme P-09)")
-    func soleCandidatePolicySwitch() {
-        let c = context(gear: [item(shoesA, .running)], policy: EnginePolicy(autoAssignSoleCandidate: false))
+    @Test("P-09: Ohne Regel wird auch ein einziger Kandidat nie automatisch gebucht, nur vorgeschlagen (Spec 6.2, 17)")
+    func soleCandidateIsOnlyProposedByDefault() {
+        #expect(EnginePolicy().autoAssignSoleCandidate == false)
+        let c = context(gear: [item(shoesA, .running)])
+        #expect(decide(activity(1, start: day(5), sport: run), c) == sole(shoesA))
+    }
+
+    @Test("P-09: Die Option autoAssignSoleCandidate bleibt als ausdrücklicher Schalter erhalten")
+    func soleCandidateOptIn() {
+        let c = context(gear: [item(shoesA, .running)], policy: EnginePolicy(autoAssignSoleCandidate: true))
         #expect(decide(activity(1, start: day(5), sport: run), c)
-                == .propose(primary: [shoesA], alternatives: [], reason: .soleCandidate, confidence: .medium))
+                == .autoAssign(gear: [shoesA], reason: .soleCandidate, confidence: .high))
     }
 
     @Test("Mehrere Kandidaten ohne Regel: nachfragen, nie raten")
@@ -243,8 +251,7 @@ struct AssignmentEngineTests {
     func unknownSportUsesOtherCategory() {
         let weird = SportType(rawValue: 9_999)
         let c = context(gear: [item(shoesA, .other)])
-        #expect(decide(activity(1, start: day(5), sport: weird), c)
-                == .autoAssign(gear: [shoesA], reason: .soleCandidate, confidence: .high))
+        #expect(decide(activity(1, start: day(5), sport: weird), c) == sole(shoesA))
     }
 
     @Test("Die Entscheidung ist deterministisch, unabhängig von der Eingabereihenfolge")
