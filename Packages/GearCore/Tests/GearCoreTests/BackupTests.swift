@@ -313,6 +313,38 @@ struct BackupTests {
         #expect(preferBackup.activities.count == 4 && preferBackup.installations.count == 2)
     }
 
+    @Test("Zusammenführen belebt keine alte Zuordnung wieder: je Aktivität gilt die gewählte Seite (kein doppeltes Buchen)")
+    func mergeKeepsOneSidePerActivity() throws {
+        // Lokal wurde die Fahrt id(401) später von Rad auf Laufschuhe korrigiert (Zuordnung 601 entfernt, 610 neu),
+        // der Posteingang dazu ist aufgelöst (952 statt 950).
+        var existing = richDataset()
+        existing.assignments.removeAll { $0.id == id(601) }
+        existing.assignments.append(ActivityGearAssignment(id: id(610), activityID: id(401), gearID: shoes, origin: .manual, createdAt: day(30)))
+        existing.pendings.removeAll { $0.id == id(950) }
+        existing.pendings.append(PendingAssignment(id: id(952), activityID: id(401), state: .resolved, proposedGearIDs: [shoes],
+                                                   reason: .history, confidence: .medium, resolution: .confirmedProposal))
+        // Das ältere Backup kennt nur den früheren Stand und zusätzlich eine Fahrt, die lokal fehlt.
+        var backup = richDataset()
+        let extra = ActivityRecord(id: id(420), source: .manual, sportType: run, startAt: day(31), endAt: day(31, hour: 1), durationSeconds: 3_600)
+        backup.activities.append(extra)
+        backup.assignments.append(ActivityGearAssignment(id: id(620), activityID: extra.id, gearID: shoes, origin: .manual, createdAt: day(31)))
+
+        func gear(_ d: GearDataset, _ activity: UUID) -> Set<UUID> { Set(d.assignments.filter { $0.activityID == activity }.map(\.gearID)) }
+        func openPendings(_ d: GearDataset, _ activity: UUID) -> Set<UUID> { Set(d.pendings.filter { $0.activityID == activity }.map(\.id)) }
+
+        let keepExisting = try BackupRestore.restore(document(backup), into: existing, mode: .merge(prefer: .existing))
+        #expect(gear(keepExisting, id(401)) == [shoes], "die lokale Korrektur gilt, das alte Rad kommt nicht zurück")
+        #expect(openPendings(keepExisting, id(401)) == [id(952)])
+        #expect(gear(keepExisting, extra.id) == [shoes], "Neues aus dem Backup kommt mit seinen Zuordnungen")
+        #expect(LedgerBuilder.build(keepExisting.ledgerInput).entries.filter { $0.activityID == id(401) }.map(\.gearID) == [shoes])
+
+        let preferBackup = try BackupRestore.restore(document(backup), into: existing, mode: .merge(prefer: .backup))
+        #expect(gear(preferBackup, id(401)) == [bike], "gewählte Seite = Backup: Zuordnung des Backups, nichts doppelt")
+        #expect(gear(preferBackup, id(401)).contains(shoes) == false)
+        #expect(openPendings(preferBackup, id(401)) == [id(950)])
+        #expect(keepExisting.segments == existing.segments && Set(preferBackup.segments.map(\.id)) == Set(backup.segments.map(\.id)))
+    }
+
     @Test("Zusammenführen, das gegen die Montageregeln verstößt, wird abgelehnt und ändert nichts")
     func mergeCreatingOverlapIsRejected() {
         var existing = richDataset()

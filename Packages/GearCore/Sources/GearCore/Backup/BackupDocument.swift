@@ -239,14 +239,25 @@ public enum BackupRestore {
             }
             return result
         }
+        // Zuordnungen, Segmente und Posteingang gehören zu ihrer Aktivität. Eine Vereinigung nach ID kann Löschungen
+        // nicht erkennen und würde eine später korrigierte, alte Zuordnung wiederbeleben (dieselbe Fahrt zählt dann für
+        // zwei Gegenstände). Darum gilt für Aktivitäten, die auf beiden Seiten existieren, nur die gewählte Seite.
+        let shared = Set(e.activities.map(\.id)).intersection(b.activities.map(\.id))
+        func owned<T>(_ items: [T], by activity: (T) -> UUID, drop dropShared: Bool) -> [T] {
+            dropShared ? items.filter { !shared.contains(activity($0)) } : items
+        }
+        let dropExisting = prefer == .backup, dropBackup = prefer == .existing
+        let segments = union(owned(e.segments, by: \.activityID, drop: dropExisting), owned(b.segments, by: \.activityID, drop: dropBackup))
+        let assignments = union(owned(e.assignments, by: \.activityID, drop: dropExisting), owned(b.assignments, by: \.activityID, drop: dropBackup))
+        let pendings = union(owned(e.pendings, by: \.activityID, drop: dropExisting), owned(b.pendings, by: \.activityID, drop: dropBackup))
         var d = GearDataset()
         d.gear = union(e.gear, b.gear); d.statusChanges = union(e.statusChanges, b.statusChanges)
         d.installations = union(e.installations, b.installations); d.presets = union(e.presets, b.presets)
         d.sportProfiles = union(e.sportProfiles, b.sportProfiles); d.activities = union(e.activities, b.activities)
-        d.segments = union(e.segments, b.segments); d.assignments = union(e.assignments, b.assignments)
+        d.segments = segments; d.assignments = assignments
         d.maintenanceEvents = union(e.maintenanceEvents, b.maintenanceEvents)
         d.maintenanceRules = union(e.maintenanceRules, b.maintenanceRules)
-        d.assignmentRules = union(e.assignmentRules, b.assignmentRules); d.pendings = union(e.pendings, b.pendings)
+        d.assignmentRules = union(e.assignmentRules, b.assignmentRules); d.pendings = pendings
         return d
     }
 }
