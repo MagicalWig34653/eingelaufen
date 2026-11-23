@@ -40,5 +40,5 @@ Prüfung der gesamten Historie vor dem Öffentlichmachen (16 Commits):
 - `git log -p --all` mit Suche nach Schlüsseln, Tokens, Passwörtern, E-Mail-Adressen, Zertifikaten/Profilen (`.p12`, `.mobileprovision`, `.env`): keine Funde. Alle Commits tragen die GitHub-noreply-Adresse.
 - Einziger Treffer: in `scripts/test.sh` und `Packages/GearCore/test.sh` steht der Standardpfad `$HOME/Development/orchestrator/tools/sparsam` (Ressourcenwrapper, per `SPARSAM` überschreibbar). Kein Geheimnis, keine Personendaten; als unkritisch bewertet und im Verlauf belassen.
 - Screenshots in `docs/screenshots/m2/` zeigen nur Testdaten der DEBUG-Fixtures.
-Reihenfolge danach: LICENSE (AGPL-3.0-or-later) und README, Umbenennung in `eingelaufen`, dann Sichtbarkeit öffentlich.
+Vollzogen am 23.11.2026: LICENSE (AGPL-3.0-or-later) und README (2f83edb), zweiter gitleaks-Lauf über 18 Commits ohne Fund, Umbenennung in `MagicalWig34653/eingelaufen` (origin angepasst, lokaler Ordner bleibt `sportausruestung`), Sichtbarkeit **öffentlich**.
 
