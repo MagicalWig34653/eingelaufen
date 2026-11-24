@@ -17,7 +17,6 @@ enum PersistenceError: Error, Equatable {
     case maintenance(MaintenanceEntryError)
     case invalidRule
     case ruleNotFound(UUID)
-    case notImplemented
 }
 
 /// Entscheidung des Nutzers zu Apple Health im Onboarding (SPEC S01 Schritt 2). Die Verbindung selbst kommt mit M3.
@@ -215,7 +214,15 @@ actor PersistenceActor {
         case .setGearStatus(let id, let status, let effectiveAt): try setStatus(id, status, effectiveAt: effectiveAt, now: now)
         case .addManualActivity(let input): try addManualActivity(input, now: now)
         case .completeOnboarding(let choice): try completeOnboarding(choice, now: now)
-        default: throw PersistenceError.notImplemented
+        case .addComponent(let parent, let item, let at): try addComponent(parent: parent, item: item, at: at, now: now)
+        case .mountComponent(let child, let parent, let at): try plan(ComponentPlanner.mount(child: child, parent: parent, at: at, graph: try graph(), gear: try gearItems()), subject: child, now: now)
+        case .unmountComponent(let child, let at): try plan(ComponentPlanner.unmount(child: child, at: at, graph: try graph(), gear: try gearItems()), subject: child, now: now)
+        case .moveComponent(let child, let parent, let at): try plan(ComponentPlanner.move(child: child, to: parent, at: at, graph: try graph(), gear: try gearItems()), subject: child, now: now)
+        case .replaceComponent(let old, let item, let status, let at):
+            try plan(ComponentPlanner.replace(old: old, with: item, oldBecomes: status, at: at, graph: try graph(), gear: try gearItems()), subject: item.id, now: now)
+        case .recordMaintenance(let input): try recordMaintenance(input, now: now)
+        case .setMaintenanceRule(let rule): try setRule(rule, now: now)
+        case .removeMaintenanceRule(let id): try removeRule(id, now: now)
         }
     }
 
@@ -306,6 +313,99 @@ actor PersistenceActor {
         }
         try enqueue(.onboardingCompleted, profiles, now: now)
         return CommandOutcome()
+    }
+
+    // MARK: Komponenten und Wartung (M5)
+
+    private func graph() throws -> InstallationGraph { InstallationGraph(try fetchAll(InstallationEntity.self).map(\.value)) }
+    private func gearItems() throws -> [GearItem] { try fetchAll(GearEntity.self).map(\.value) }
+
+    /// Neues Teil und Montage in einer Transaktion: Montage wird gegen den Bestand samt neuem Teil geprüft.
+    private func addComponent(parent: UUID, item: GearItem, at: Date, now: Date) throws -> CommandOutcome {
+        let created = try createGear(item, now: now)
+        guard let id = created.gearID else { return created }
+        let result = try ComponentPlanner.mount(child: id, parent: parent, at: at, graph: try graph(), gear: try gearItems())
+        return try plan(result, subject: id, now: now)
+    }
+
+    /// Schreibt einen Montageplan: neue Teile, Statuswechsel, Montagen (Upsert), Wartungsereignisse; danach werden die
+    /// Aktivitäten im Wirkungsbereich der alten und neuen Montage neu berechnet (SPEC 4.5, I-10).
+    @discardableResult
+    private func plan(_ build: @autoclosure () throws -> ComponentPlan, subject: UUID, now: Date) throws -> CommandOutcome {
+        let plan: ComponentPlan
+        do { plan = try build() } catch let error as ComponentPlanError { throw PersistenceError.component(error) }
+        let activities = try fetchAll(ActivityEntity.self).map(\.value)
+        let segments = try fetchAll(ActivitySegmentEntity.self).map(\.value)
+        var affected = Set<UUID>()
+        var touchedGear: [UUID] = []
+        for item in plan.newGear {
+            _ = try createGear(item, now: now)
+            touchedGear.append(item.id)
+        }
+        for change in plan.statusChanges {
+            _ = try setStatus(change.gearID, change.status, effectiveAt: change.effectiveAt, now: now)
+            touchedGear.append(change.gearID)
+        }
+        for installation in plan.installations {
+            let id = installation.id
+            if let row = try modelContext.fetch(FetchDescriptor<InstallationEntity>(predicate: #Predicate { $0.id == id })).first {
+                affected.formUnion(LedgerProjection.activitiesTouching(row.value, activities: activities, segments: segments))
+                row.endedAt = installation.endedAt
+                row.notes = installation.notes
+            } else {
+                modelContext.insert(InstallationEntity(installation))
+            }
+            affected.formUnion(LedgerProjection.activitiesTouching(installation, activities: activities, segments: segments))
+            touchedGear += [installation.parentGearID, installation.childGearID]
+        }
+        for event in plan.maintenanceEvents { modelContext.insert(MaintenanceEventEntity(event)) }
+        let usageGear = try rebuildLedger(for: affected, now: now)
+        var seen = Set<UUID>()
+        let subjects = (touchedGear + usageGear.sorted { $0.uuidString < $1.uuidString }).filter { seen.insert($0).inserted }
+        try enqueue(.gearChanged, subjects, now: now)
+        if !affected.isEmpty { try enqueue(.activityChanged, affected.sorted { $0.uuidString < $1.uuidString }, now: now) }
+        if !plan.maintenanceEvents.isEmpty { try enqueue(.maintenanceChanged, plan.maintenanceEvents.map(\.gearID), now: now) }
+        return CommandOutcome(gearID: subject)
+    }
+
+    private func recordMaintenance(_ input: MaintenanceInput, now: Date) throws -> CommandOutcome {
+        guard try gear(input.gearID) != nil else { throw PersistenceError.gearNotFound(input.gearID) }
+        let event: MaintenanceEvent
+        do {
+            event = try MaintenanceEntry.make(kind: input.kind, gearID: input.gearID, performedAt: input.performedAt, now: now,
+                                              measurement: input.measurement, costMinor: input.costMinor, notes: input.notes, id: input.id)
+        } catch let error as MaintenanceEntryError { throw PersistenceError.maintenance(error) }
+        modelContext.insert(MaintenanceEventEntity(event))
+        try enqueue(.maintenanceChanged, [input.gearID], now: now)
+        return CommandOutcome(gearID: input.gearID)
+    }
+
+    private func setRule(_ rule: MaintenanceRule, now: Date) throws -> CommandOutcome {
+        guard try gear(rule.gearID) != nil else { throw PersistenceError.gearNotFound(rule.gearID) }
+        guard rule.intervalValue.isFinite, rule.intervalValue > 0 else { throw PersistenceError.invalidRule }
+        if let lead = rule.warningLeadValue, !(lead.isFinite && lead >= 0 && lead <= rule.intervalValue) { throw PersistenceError.invalidRule }
+        let id = rule.id
+        if let row = try modelContext.fetch(FetchDescriptor<MaintenanceRuleEntity>(predicate: #Predicate { $0.id == id })).first {
+            row.kindRaw = rule.kind.rawValue
+            row.metricRaw = rule.metric.rawValue
+            row.intervalValue = rule.intervalValue
+            row.warningLeadValue = rule.warningLeadValue
+            row.enabled = rule.enabled
+        } else {
+            modelContext.insert(MaintenanceRuleEntity(rule))
+        }
+        try enqueue(.maintenanceChanged, [rule.gearID], now: now)
+        return CommandOutcome(gearID: rule.gearID)
+    }
+
+    private func removeRule(_ id: UUID, now: Date) throws -> CommandOutcome {
+        guard let row = try modelContext.fetch(FetchDescriptor<MaintenanceRuleEntity>(predicate: #Predicate { $0.id == id })).first else {
+            throw PersistenceError.ruleNotFound(id)
+        }
+        let gearID = row.gearID
+        modelContext.delete(row)
+        try enqueue(.maintenanceChanged, [gearID], now: now)
+        return CommandOutcome(gearID: gearID)
     }
 
     // MARK: Ledger
