@@ -155,6 +155,9 @@ final class FlowUITests: XCTestCase {
         field.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: current.count))
         field.typeText("Gravel-Schuhe")
         alert.buttons["Speichern"].tap()
+        // Der Titel in der Leiste folgt dem neuen Namen; der Kopf der Liste liegt nach dem Scrollen oben außerhalb.
+        XCTAssertTrue(app.navigationBars["Gravel-Schuhe"].waitForExistence(timeout: 5))
+        app.swipeDown(); app.swipeDown()
         XCTAssertTrue(app.staticTexts["detailName"].waitForExistence(timeout: 5))
         XCTAssertEqual(app.staticTexts["detailName"].label, "Gravel-Schuhe")
     }

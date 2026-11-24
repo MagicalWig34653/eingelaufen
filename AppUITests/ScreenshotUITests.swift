@@ -55,4 +55,26 @@ final class ScreenshotUITests: XCTestCase {
             app.terminate()
         }
     }
+
+    /// M5: Komponenten, Wartung, Regel-/Messwert-Status, Hinweise (hell/dunkel stellt der Aufrufer ein).
+    @MainActor
+    func testMaintenanceScreens() {
+        let tag = ProcessInfo.processInfo.environment["SCREENSHOT_TAG"] ?? "light"
+        let app = launch("maintenance")
+        XCTAssertTrue(app.element(id: "hint.Kette").waitForExistence(timeout: 10))
+        shot(app, "\(tag)-m5-1-uebersicht-hinweis")
+        app.tabBars.buttons["Ausrüstung"].tapWhenReady()
+        app.buttons["gear.Canyon Endurace"].tapWhenReady()
+        XCTAssertTrue(app.buttons["component.Kette"].waitForExistence(timeout: 8))
+        shot(app, "\(tag)-m5-2-detail-komponenten-wartung")
+        app.tapRevealed(app.buttons["component.Kette"])
+        XCTAssertTrue(app.staticTexts["detailName"].waitForExistence(timeout: 8))
+        shot(app, "\(tag)-m5-3-komponente-kopf")
+        app.swipeUp()
+        shot(app, "\(tag)-m5-4-komponente-wartung-status")
+        app.swipeDown(); app.swipeDown()
+        app.buttons["componentReplace.Kette"].tapWhenReady()
+        XCTAssertTrue(app.textFields["replaceName"].waitForExistence(timeout: 8))
+        shot(app, "\(tag)-m5-5-ersetzen")
+    }
 }
