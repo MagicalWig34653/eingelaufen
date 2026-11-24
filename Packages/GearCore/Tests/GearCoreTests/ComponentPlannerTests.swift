@@ -111,10 +111,14 @@ struct ComponentPlannerTests {
         }
     }
 
-    @Test("Umbauen in den eigenen Teilebaum ist abgelehnt (I-02)")
+    @Test("Umbauen in den eigenen Teilebaum ist abgelehnt (I-02), auf sich selbst ebenso")
     func moveIntoOwnSubtree() {
-        let graph = InstallationGraph([mount(wheel, in: bike, from: day(0)), mount(chain, in: bike, from: day(0))])
+        // Fahrrad → Laufrad → Kette: das Laufrad auf die Kette zu setzen, wäre ein Kreis.
+        let graph = InstallationGraph([mount(wheel, in: bike, from: day(0)), mount(chain, in: wheel, from: day(0))])
         #expect(throws: ComponentPlanError.wouldCreateCycle) {
+            try ComponentPlanner.move(child: wheel, to: chain, at: day(2), graph: graph, gear: gear(bike, wheel, chain))
+        }
+        #expect(throws: ComponentPlanError.sameGear) {
             try ComponentPlanner.move(child: wheel, to: wheel, at: day(2), graph: graph, gear: gear(bike, wheel, chain))
         }
     }

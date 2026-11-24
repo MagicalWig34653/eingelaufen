@@ -84,17 +84,17 @@ public struct LedgerProjection: Sendable {
     /// Aktivitäten, deren Beginn im Intervall der Montage liegt (Aktivitäts- oder Segmentbeginn).
     public static func activitiesTouching(_ installation: Installation, activities: [ActivityRecord],
                                           segments: [ActivitySegment]) -> Set<UUID> {
-        []
+        func inWindow(_ t: Date) -> Bool { installation.isActive(at: t) }
+        var result = Set<UUID>()
+        for activity in activities where inWindow(activity.startAt) { result.insert(activity.id) }
+        for segment in segments where inWindow(segment.startAt) { result.insert(segment.activityID) }
+        return result
     }
 
     // MARK: Intern
 
     private func activitiesTouching(_ installation: Installation) -> Set<UUID> {
-        func inWindow(_ t: Date) -> Bool { installation.isActive(at: t) }
-        var result = Set<UUID>()
-        for activity in input.activities where inWindow(activity.startAt) { result.insert(activity.id) }
-        for segment in input.segments where inWindow(segment.startAt) { result.insert(segment.activityID) }
-        return result
+        Self.activitiesTouching(installation, activities: input.activities, segments: input.segments)
     }
 
     private static func upsert<T: Identifiable>(_ item: T, in list: inout [T]) where T.ID == UUID {
