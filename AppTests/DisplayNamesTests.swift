@@ -1,5 +1,6 @@
 import Foundation
 import GearCore
+import SwiftUI
 import Testing
 @testable import Eingelaufen
 
@@ -43,4 +44,32 @@ import Testing
         #expect(DisplayNames.distance(.measured(12_340, isComplete: false)).contains("unvollständig"))
         #expect(DisplayNames.distance(.estimate(5_000, basis: .firstUsage)).contains("Schätzung"))
     }
+
+    // M5-Befund „Warnfarbe bei überfälliger Wartung“: Farbe nur zusätzlich zu Symbol und Text (SPEC 1.4).
+    @Test func overdueMaintenanceIsMarkedByColorSymbolAndText() {
+        let due = DisplayNames.statusStyle(for: .due), soon = DisplayNames.statusStyle(for: .dueSoon)
+        #expect(due.color == .red && soon.color == .orange)
+        #expect(DisplayNames.statusStyle(for: .unknown).color == .secondary)
+        #expect(DisplayNames.statusStyle(for: .belowInterval).color == .secondary)
+        let symbols = RuleStateSet.all.map { DisplayNames.statusStyle(for: $0).symbol }
+        #expect(Set(symbols).count == symbols.count, "Jeder Zustand hat ein eigenes Symbol")
+        #expect(RuleStateSet.all.allSatisfy { !DisplayNames.name(for: $0).isEmpty })
+    }
+
+    // M5-Befund „verschachtelte Komponenten“: der Weg bis zur obersten Ausrüstung steht im Detail.
+    @Test func installedInShowsTheWholePath() {
+        #expect(DisplayNames.installedIn(path: ["Canyon Endurace"]) == "Canyon Endurace")
+        #expect(DisplayNames.installedIn(path: ["Canyon Endurace", "Laufrad"]) == "Canyon Endurace › Laufrad")
+        #expect(DisplayNames.installedIn(path: []) == "")
+    }
+
+    // M5-Befund „Einheit der Messgrenze“: die Einheit legt der Nutzer fest, die Texte sagen es.
+    @Test func measurementLimitTextNamesTheUnitRule() {
+        let text = DisplayNames.limitText(0.5)
+        #expect(text.contains("0,5") || text.contains("0.5"))
+        #expect(text.contains("Einheit wie beim Messwert"))
+    }
 }
+
+/// Alle Zustände einer Regel, damit neue Fälle in den Tests auffallen.
+private enum RuleStateSet { static let all: [RuleState] = [.unknown, .belowInterval, .dueSoon, .due] }

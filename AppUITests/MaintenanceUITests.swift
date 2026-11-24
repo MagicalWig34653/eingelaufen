@@ -137,6 +137,10 @@ final class MaintenanceUITests: XCTestCase {
         XCTAssertTrue(app.reveal(measurement))
         XCTAssertTrue(measurement.label.contains("0,3"), measurement.label)
         XCTAssertFalse(app.staticTexts["forecastStatus"].exists, "Prognose nur mit ausreichend Daten (SPEC 8.2)")
+        // M5-Befund: die Einheit der Messgrenze ist am Grenzwert sichtbar (sie ist die der Messung, vom Nutzer gewählt).
+        let limit = app.buttons["ruleLimit"]
+        XCTAssertTrue(app.reveal(limit))
+        XCTAssertTrue(limit.label.contains("Einheit wie beim Messwert"), limit.label)
     }
 
     @MainActor

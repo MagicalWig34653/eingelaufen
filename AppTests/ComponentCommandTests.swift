@@ -112,4 +112,22 @@ import Testing
         #expect(normalized(try await p.dataset()) == before)
         #expect(try await p.outbox(pendingOnly: false).count == outboxBefore)
     }
+
+    // M5-Befund „verschachtelte Komponenten“: Fahrrad → Laufrad → Reifen, Nutzung läuft über alle Ebenen und zeitabhängig (T-02).
+    @Test func nestedComponentsInheritUsageAcrossLevelsAndMoves() async throws {
+        let p = try await setup(mounted: false)
+        let wheel = GearItem(name: "Laufrad", createdAt: day(-30), category: .cycling)
+        let tire = GearItem(name: "Reifen", createdAt: day(-30), category: .cycling)
+        for g in [wheel, tire] { _ = try await p.apply(.createGear(g), now: now) }
+        _ = try await p.apply(.mountComponent(child: wheel.id, parent: bike.id, at: day(0)), now: now)
+        _ = try await p.apply(.mountComponent(child: tire.id, parent: wheel.id, at: day(0)), now: now)
+        try await ride(p, 1)
+        _ = try await p.apply(.moveComponent(child: wheel.id, to: bike2.id, at: day(5)), now: now)
+        try await ride(p, 10)    // Rad sitzt jetzt am zweiten Fahrrad: zählt weder für Laufrad noch Reifen
+        #expect(try await p.usage(of: wheel.id).distanceMeters == .measured(20_000, isComplete: true))
+        #expect(try await p.usage(of: tire.id).distanceMeters == .measured(20_000, isComplete: true))
+        let ds = try await p.dataset()
+        #expect(InstallationGraph(ds.installations).validate().isEmpty)
+        #expect(InstallationGraph(ds.installations).ancestors(of: tire.id, at: day(1)) == [wheel.id, bike.id])
+    }
 }

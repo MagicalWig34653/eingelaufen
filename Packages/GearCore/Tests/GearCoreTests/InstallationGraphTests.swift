@@ -117,6 +117,20 @@ struct InstallationGraphTests {
         #expect(graph.children(of: bike, at: day(1)).count == 2)
     }
 
+    @Test("Vorfahren: der Weg vom Teil bis zur obersten Ausrüstung, zeitabhängig und kreissicher (M5-Befund)")
+    func ancestorsWalkUpToTheTopAndTerminate() {
+        let graph = InstallationGraph([
+            mount(wheel, in: bike, from: day(0), to: day(5)),
+            mount(wheel, in: bike2, from: day(5)),
+            mount(tire, in: wheel, from: day(0)),
+        ])
+        #expect(graph.ancestors(of: tire, at: day(1)) == [wheel, bike])
+        #expect(graph.ancestors(of: tire, at: day(6)) == [wheel, bike2])
+        #expect(graph.ancestors(of: bike, at: day(1)).isEmpty)
+        let loop = InstallationGraph([mount(wheel, in: bike, from: day(0)), mount(bike, in: wheel, from: day(0))])
+        #expect(loop.ancestors(of: wheel, at: day(1)).count <= 2)
+    }
+
     @Test("Nachfahren-Suche terminiert auch bei kaputten Daten mit Kreis")
     func descendantsTerminateOnCycle() {
         let graph = InstallationGraph([
