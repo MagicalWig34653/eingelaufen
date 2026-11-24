@@ -124,6 +124,21 @@ final class MaintenanceUITests: XCTestCase {
         XCTAssertTrue(app.element(id: "installedIn").label.contains("Canyon Endurace"))
     }
 
+    /// M5-Befund: verschachtelte Komponenten (Fahrrad → Laufrad → Reifen): der Reifen nennt den ganzen Weg und erbt die Nutzung.
+    @MainActor
+    func testNestedComponentShowsFullPathAndInheritsUsage() {
+        let app = launch("nested")
+        openBikeDetail(app)
+        app.tapRevealed(app.buttons["component.Laufrad"])
+        XCTAssertTrue(app.element(id: "installedIn").waitForExistence(timeout: 8))
+        XCTAssertTrue(app.element(id: "installedIn").label.contains("Canyon Endurace"), app.element(id: "installedIn").label)
+        XCTAssertFalse(app.element(id: "installedIn").label.contains("›"), "Direkt am Fahrrad: kein Pfad")
+        app.tapRevealed(app.buttons["component.Reifen"])
+        XCTAssertTrue(app.element(id: "installedIn").waitForExistence(timeout: 8))
+        XCTAssertTrue(app.element(id: "installedIn").label.contains("Canyon Endurace › Laufrad"), app.element(id: "installedIn").label)
+        XCTAssertTrue(app.element(id: "usageDistance").label.contains("42"), "Nutzung läuft über beide Ebenen: \(app.element(id: "usageDistance").label)")
+    }
+
     @MainActor
     func testRuleStatusesAreSeparatedAndForecastIsAbsentWithoutEnoughData() {
         let app = launch("maintenance")

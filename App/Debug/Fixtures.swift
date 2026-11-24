@@ -15,6 +15,9 @@ enum Fixtures {
         case "basic":
             try? await persistence.load(basic)
             _ = try? await persistence.apply(.completeOnboarding(OnboardingChoice(categories: [.cycling, .running], health: .later)), now: at(day: 0))
+        case "nested":
+            try? await persistence.load(nested)
+            _ = try? await persistence.apply(.completeOnboarding(OnboardingChoice(categories: [.cycling], health: .later)), now: at(day: 0))
         case "maintenance":
             try? await persistence.load(maintenance)
             _ = try? await persistence.apply(.completeOnboarding(OnboardingChoice(categories: [.cycling], health: .later)), now: at(day: 0))
@@ -46,6 +49,23 @@ enum Fixtures {
             MaintenanceRule(gearID: chain.id, kind: .lubricated, metric: .distance, intervalValue: 100_000, warningLeadValue: 20_000),
             MaintenanceRule(gearID: chain.id, kind: .wearMeasured, metric: .distance, intervalValue: 0.5),
         ]
+        return d
+    }
+
+    /// Verschachtelt: Rennrad → Laufrad → Reifen (M5-Befund), eine Fahrt auf dem Rennrad.
+    static var nested: GearDataset {
+        let bike = GearItem(name: "Canyon Endurace", createdAt: at(day: 0), category: .cycling, subtype: .roadBike)
+        let wheel = GearItem(name: "Laufrad", createdAt: at(day: 0), category: .cycling)
+        let tire = GearItem(name: "Reifen", createdAt: at(day: 0), category: .cycling)
+        var d = GearDataset()
+        d.gear = [bike, wheel, tire]
+        d.statusChanges = d.gear.map { GearStatusChange(gearID: $0.id, status: .active, effectiveAt: at(day: 0)) }
+        d.installations = [Installation(parentGearID: bike.id, childGearID: wheel.id, startedAt: at(day: 0)),
+                           Installation(parentGearID: wheel.id, childGearID: tire.id, startedAt: at(day: 0))]
+        let a = ActivityRecord(source: .manual, sportType: SportCategory.cycling.defaultSportType, startAt: at(day: 2),
+                               endAt: at(day: 2).addingTimeInterval(5_400), distanceMeters: 42_300, durationSeconds: 5_400)
+        d.activities = [a]
+        d.assignments = [ActivityGearAssignment(activityID: a.id, gearID: bike.id, origin: .manual, createdAt: at(day: 2))]
         return d
     }
 

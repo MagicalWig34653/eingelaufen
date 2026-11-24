@@ -41,7 +41,13 @@ struct OverviewView: View {
                                 NavigationLink(value: GearRoute(id: hint.gearID)) {
                                     VStack(alignment: .leading, spacing: 2) {
                                         Text(hint.gearName).font(.body.weight(.semibold))
-                                        Text(hint.text).font(.footnote).foregroundStyle(.secondary)
+                                        let style = DisplayNames.statusStyle(for: hint.state)
+                                        Label {
+                                            Text(hint.text).foregroundStyle(.secondary)
+                                        } icon: {
+                                            Image(systemName: style.symbol).foregroundStyle(style.color)
+                                        }
+                                        .font(.footnote)
                                     }
                                     .frame(minHeight: 44, alignment: .leading)
                                 }
@@ -84,7 +90,7 @@ struct OverviewView: View {
         .sheet(isPresented: $showAddActivity) { ManualActivityView(preselectedGearID: nil) }
     }
 
-    private struct Hint { var gearID: UUID; var gearName: String; var text: String; var id: String { "\(gearID)" } }
+    private struct Hint { var gearID: UUID; var gearName: String; var text: String; var state: RuleState; var id: String { "\(gearID)" } }
 
     /// Höchstens drei Hinweise (SPEC S02), nur für aktive Ausrüstung; Text sagt „Prüfen“, nicht „Ersetzen“.
     private var hints: [Hint] {
@@ -100,7 +106,7 @@ struct OverviewView: View {
             case .measurement:
                 text = String(localized: "Messgrenze erreicht: Prüfen")
             }
-            return Hint(gearID: h.gearID, gearName: name, text: text)
+            return Hint(gearID: h.gearID, gearName: name, text: text, state: h.state)
         }
     }
 

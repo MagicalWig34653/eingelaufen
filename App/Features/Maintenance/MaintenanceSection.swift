@@ -99,13 +99,18 @@ struct MaintenanceSection: View {
         Button { ruleSheet = RuleSheet(rule: rule) } label: {
             VStack(alignment: .leading, spacing: 2) {
                 if rule.kind == .wearMeasured {
-                    Text("Messgrenze \(DisplayNames.number(rule.intervalValue))").font(.body)
+                    Text(DisplayNames.limitText(rule.intervalValue)).font(.body)
                     Text(rule.enabled ? String(localized: "Regel aktiv") : String(localized: "Regel aus")).font(.footnote).foregroundStyle(.secondary)
                 } else if !rule.enabled {
                     Text("\(DisplayNames.name(for: rule.kind)): alle \(DisplayNames.plain(rule.intervalValue, rule.metric))")
                     Text("Regel aus").font(.footnote).foregroundStyle(.secondary)
                 } else if let status = report.intervals.first(where: { $0.rule.id == rule.id }) {
-                    Text(DisplayNames.summary(status))
+                    let style = DisplayNames.statusStyle(for: status.state)
+                    Label {
+                        Text(DisplayNames.summary(status))
+                    } icon: {
+                        Image(systemName: style.symbol).foregroundStyle(style.color)
+                    }
                 } else {
                     Text(DisplayNames.name(for: rule.kind))
                 }
@@ -123,7 +128,14 @@ struct MaintenanceSection: View {
         case .withinLimit: text += " · " + String(localized: "Grenze \(DisplayNames.number(m.limit ?? 0)): im Rahmen")
         case .limitReached: text += " · " + String(localized: "Grenze \(DisplayNames.number(m.limit ?? 0)) erreicht: Prüfen")
         }
-        return Label(text, systemImage: "ruler").accessibilityIdentifier("measurementStatus")
+        let reached = m.state == .limitReached
+        let style = DisplayNames.statusStyle(for: reached ? .due : .belowInterval)
+        return Label {
+            Text(text)
+        } icon: {
+            Image(systemName: reached ? style.symbol : "ruler").foregroundStyle(reached ? style.color : .secondary)
+        }
+        .accessibilityIdentifier("measurementStatus")
     }
 
     private func eventRow(_ e: MaintenanceEvent) -> some View {

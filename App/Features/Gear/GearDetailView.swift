@@ -42,6 +42,13 @@ struct GearDetailView: View {
         .navigationBarTitleDisplayMode(.inline)
     }
 
+    /// „Fahrrad › Laufrad“: Weg bis zur obersten Ausrüstung (verschachtelte Komponenten), oberste zuerst.
+    private var installedInPath: String {
+        let ids = InstallationGraph(allInstallations.map(\.value)).ancestors(of: gearID, at: Date())
+        let names = Dictionary(allGear.map { ($0.id, $0.name) }, uniquingKeysWith: { a, _ in a })
+        return DisplayNames.installedIn(path: ids.reversed().compactMap { names[$0] })
+    }
+
     private func content(_ gear: GearEntity) -> some View {
         let status = GearStatus(rawValue: gear.statusRaw) ?? .active
         let category = SportCategory(rawValue: gear.categoryRaw) ?? .other
@@ -59,9 +66,9 @@ struct GearDetailView: View {
                     }
                 }
                 LabeledContent("Status", value: DisplayNames.name(for: status)).accessibilityIdentifier("detailStatus")
-                if let parent = mounted.first.flatMap({ m in allGear.first { $0.id == m.parentGearID } }) {
+                if mounted.first != nil {
                     // Nur Text, kein Link zurück: Teil und Elternteil würden sich beim Aufbau endlos gegenseitig auswerten.
-                    LabeledContent("Verbaut in", value: parent.name).accessibilityIdentifier("installedIn")
+                    LabeledContent("Verbaut in", value: installedInPath).accessibilityIdentifier("installedIn")
                     // Eine Komponente tauscht, baut um oder aus an ihrer eigenen Seite (SPEC 4.3, 4.4).
                     Button("Ersetzen", systemImage: "arrow.triangle.2.circlepath") { componentSheet = .replace(gearID) }
                         .accessibilityIdentifier("componentReplace.\(gear.name)")

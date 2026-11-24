@@ -77,6 +77,19 @@ public struct InstallationGraph: Sendable {
         return ids.sorted { $0.uuidString < $1.uuidString }
     }
 
+    /// Weg vom Teil nach oben zum Zeitpunkt `t`: direktes Elternteil zuerst, oberste Ausrüstung zuletzt, ohne `child`.
+    /// Terminiert auch bei Kreisen (jeder Gegenstand höchstens einmal).
+    public func ancestors(of child: UUID, at t: Date) -> [UUID] {
+        var visited: Set<UUID> = [child]
+        var result: [UUID] = []
+        var current = child
+        while let parent = parent(of: current, at: t), visited.insert(parent).inserted {
+            result.append(parent)
+            current = parent
+        }
+        return result
+    }
+
     /// Alle zum Zeitpunkt `t` (transitiv) montierten Gegenstände, ohne `root`. Terminiert auch bei Kreisen.
     public func descendants(of root: UUID, at t: Date) -> [UUID] {
         var visited: Set<UUID> = [root]

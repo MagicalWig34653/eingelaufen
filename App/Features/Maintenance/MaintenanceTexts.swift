@@ -1,5 +1,6 @@
 import Foundation
 import GearCore
+import SwiftUI
 
 /// Texte und Formatierung für Wartung (SPEC 8). Intervallhinweise sagen „Prüfen“, nie „Ersetzen“ (SPEC 7.4);
 /// Zustände stehen immer als Text, nie nur als Farbe (SPEC 1.4); fehlende Daten sind „Nicht beurteilbar“, nie „in Ordnung“ (T-09).
@@ -49,6 +50,25 @@ extension DisplayNames {
         case .belowInterval: String(localized: "Kein Hinweis fällig")
         case .unknown: String(localized: "Nicht beurteilbar")
         }
+    }
+
+    /// Darstellung eines Regelzustands: Farbe ist nie das einzige Signal (SPEC 1.4), daher immer mit Symbol und Text (`name(for:)`).
+    /// „Prüfen“ (überfällig) rot, „Bald prüfen“ orange; alles andere neutral, auch „Nicht beurteilbar“ (kein „in Ordnung“ aus fehlenden Daten, T-09).
+    static func statusStyle(for state: RuleState) -> (color: Color, symbol: String) {
+        switch state {
+        case .due: (.red, "exclamationmark.triangle.fill")
+        case .dueSoon: (.orange, "clock.badge.exclamationmark")
+        case .belowInterval: (.secondary, "circle")
+        case .unknown: (.secondary, "questionmark.circle")
+        }
+    }
+
+    /// Weg bis zur obersten Ausrüstung, oberste zuerst: „Fahrrad › Laufrad“.
+    static func installedIn(path: [String]) -> String { path.joined(separator: " › ") }
+
+    /// Die Messgrenze hat keine feste Einheit: sie gilt in der Einheit, in der der Nutzer misst (z. B. Prozent Kettenlängung).
+    static func limitText(_ limit: Double) -> String {
+        String(localized: "Messgrenze \(number(limit)) (Einheit wie beim Messwert)")
     }
 
     static func number(_ value: Double, maxFraction: Int = 2) -> String {
