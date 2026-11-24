@@ -6,12 +6,16 @@ import SwiftUI
 struct GearListView: View {
     @Binding var showSettings: Bool
     @Query(sort: \GearEntity.name) private var gear: [GearEntity]
+    @Query(filter: #Predicate<InstallationEntity> { $0.endedAt == nil }) private var openInstallations: [InstallationEntity]
     @State private var search = ""
     @State private var showArchived = false
     @State private var showAddGear = false
 
     private var visible: [GearEntity] {
-        gear.filter { showArchived || $0.statusRaw != GearStatus.archived.rawValue }
+        // Montierte Komponenten stehen im Detail ihres Gegenstands, nicht in der Liste (SPEC S03).
+        let mountedChildren = Set(openInstallations.map(\.childGearID))
+        return gear.filter { !mountedChildren.contains($0.id) }
+            .filter { showArchived || $0.statusRaw != GearStatus.archived.rawValue }
             .filter { search.isEmpty || $0.name.localizedCaseInsensitiveContains(search) }
     }
 

@@ -2,7 +2,7 @@ import GearCore
 import SwiftData
 import SwiftUI
 
-/// Ausrüstungsdetail (SPEC S04, ohne Komponenten/Wartung, die kommen in M5).
+/// Ausrüstungsdetail (SPEC S04): Nutzung, Wartung (Schnellaktionen, Regeln, Status), Komponenten samt früherer, Verlauf.
 struct GearDetailView: View {
     let gearID: UUID
     @Environment(AppModel.self) private var model
@@ -15,12 +15,19 @@ struct GearDetailView: View {
     @State private var newName = ""
     @State private var confirmArchive = false
     @State private var showAddActivity = false
+    @State private var componentSheet: ComponentSheet?
+    @Query private var mounted: [InstallationEntity]
+    @Query private var childInstallations: [InstallationEntity]
+    @Query private var allInstallations: [InstallationEntity]
+    @Query private var allGear: [GearEntity]
 
     init(gearID: UUID) {
         self.gearID = gearID
         _rows = Query(filter: #Predicate { $0.id == gearID })
         _summaries = Query(filter: #Predicate { $0.gearID == gearID })
         _ledger = Query(filter: #Predicate { $0.gearID == gearID })
+        _mounted = Query(filter: #Predicate { $0.childGearID == gearID && $0.endedAt == nil })
+        _childInstallations = Query(filter: #Predicate { $0.parentGearID == gearID && $0.endedAt == nil })
     }
 
     var body: some View {
@@ -49,12 +56,31 @@ struct GearDetailView: View {
                     }
                 }
                 LabeledContent("Status", value: DisplayNames.name(for: status)).accessibilityIdentifier("detailStatus")
+                if let parent = mounted.first.flatMap({ m in allGear.first { $0.id == m.parentGearID } }) {
+                    // Nur Text, kein Link zurück: Teil und Elternteil würden sich beim Aufbau endlos gegenseitig auswerten.
+                    LabeledContent("Verbaut in", value: parent.name).accessibilityIdentifier("installedIn")
+                    // Eine Komponente tauscht, baut um oder aus an ihrer eigenen Seite (SPEC 4.3, 4.4).
+                    Button("Ersetzen", systemImage: "arrow.triangle.2.circlepath") { componentSheet = .replace(gearID) }
+                        .accessibilityIdentifier("componentReplace.\(gear.name)")
+                    Button("Umbauen", systemImage: "arrow.left.arrow.right") { componentSheet = .move(gearID) }
+                        .accessibilityIdentifier("componentMove.\(gear.name)")
+                    Button("Ausbauen", systemImage: "minus.circle") { componentSheet = .unmount(gearID) }
+                        .accessibilityIdentifier("componentUnmount.\(gear.name)")
+                }
             }
             Section("Nutzung") {
                 LabeledContent("Nutzungen", value: "\(usage.uses)").accessibilityIdentifier("usageUses")
                 LabeledContent("Distanz", value: DisplayNames.distance(usage.distanceMeters)).accessibilityIdentifier("usageDistance")
                 LabeledContent("Dauer", value: DisplayNames.duration(usage.durationSeconds))
+                if case let .value(since) = UsageQuery(entries: ledger.map(\.value), installations: allInstallations.map(\.value)).sinceInstallation(of: gearID) {
+                    LabeledContent("Seit Einbau", value: since.uses == 1 ? "1 Nutzung" : "\(since.uses) Nutzungen")
+                        .accessibilityIdentifier("sinceInstallation")
+                }
             }
+            ComponentsSection(gearID: gearID, isArchived: status == .archived, sheet: $componentSheet)
+            MaintenanceSection(gearID: gearID, isArchived: status == .archived,
+                               components: childInstallations.compactMap { c in allGear.first { $0.id == c.childGearID }.map { (id: $0.id, name: $0.name) } },
+                               componentSheet: $componentSheet)
             Section("Aktionen") {
                 Button("Aktivität eintragen", systemImage: "plus.circle") { showAddActivity = true }
                     .disabled(status == .archived)
@@ -84,6 +110,14 @@ struct GearDetailView: View {
             Text("Die Ausrüstung wird ausgeblendet, nicht gelöscht. Ihr Verlauf bleibt erhalten.")
         }
         .sheet(isPresented: $showAddActivity) { ManualActivityView(preselectedGearID: gearID) }
+        .sheet(item: $componentSheet) { sheet in
+            switch sheet {
+            case .add: AddComponentSheet(parentID: gearID)
+            case .replace(let id): ComponentActionSheet(mode: .replace, componentID: id)
+            case .move(let id): ComponentActionSheet(mode: .move, componentID: id)
+            case .unmount(let id): ComponentActionSheet(mode: .unmount, componentID: id)
+            }
+        }
     }
 
     @ViewBuilder

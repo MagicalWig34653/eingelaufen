@@ -88,7 +88,7 @@ final class FlowUITests: XCTestCase {
         XCTAssertTrue(app.buttons["gear.Laufschuhe Pegasus"].waitForExistence(timeout: 8))
         XCTAssertFalse(app.buttons["gear.Alte Laufschuhe"].exists, "Archiviertes ist standardmäßig ausgeblendet")
         app.buttons["gear.Laufschuhe Pegasus"].tap()
-        app.buttons["detailArchive"].tapWhenReady()
+        app.tapRevealed(app.buttons["detailArchive"])
         app.sheets.firstMatch.buttons["Archivieren"].tapWhenReady()   // Bestätigungsdialog (Aktionsblatt)
         XCTAssertTrue(app.navigationBars["Ausrüstung"].waitForExistence(timeout: 8))
         XCTAssertFalse(app.buttons["gear.Laufschuhe Pegasus"].exists)
@@ -146,7 +146,7 @@ final class FlowUITests: XCTestCase {
         let app = launch("basic")
         app.tabBars.buttons["Ausrüstung"].tapWhenReady()
         app.buttons["gear.Radschuhe"].tapWhenReady()
-        app.buttons["detailRename"].tapWhenReady()
+        app.tapRevealed(app.buttons["detailRename"])
         let alert = app.alerts["Umbenennen"]
         XCTAssertTrue(alert.waitForExistence(timeout: 5))
         let field = alert.textFields.firstMatch

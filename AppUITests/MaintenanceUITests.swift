@@ -19,8 +19,8 @@ final class MaintenanceUITests: XCTestCase {
         openBikeDetail(app)
         var actions = 0
         app.buttons["quick.lubricated"].tapWhenReady(); actions += 1
-        XCTAssertTrue(app.element(id: "maintenanceEvent.lubricated").waitForExistence(timeout: 8), "Ereignis steht sofort in der Wartungsliste")
-        XCTAssertTrue(app.element(id: "maintenanceEvent.lubricated").label.contains("Geschmiert"))
+        XCTAssertTrue(app.reveal(app.staticTexts["maintenanceEvent.lubricated"]), "Ereignis steht sofort in der Wartungsliste")
+        XCTAssertTrue(app.staticTexts["maintenanceEvent.lubricated"].label.contains("Geschmiert"))
         XCTAssertLessThanOrEqual(actions, 3)
     }
 
@@ -35,8 +35,8 @@ final class MaintenanceUITests: XCTestCase {
         value.typeText("0,4")
         app.buttons["keyboardDone"].tapWhenReady()
         app.buttons["maintenanceSave"].tapWhenReady(); actions += 1
-        let row = app.element(id: "maintenanceEvent.wearMeasured")
-        XCTAssertTrue(row.waitForExistence(timeout: 8))
+        let row = app.staticTexts["maintenanceEvent.wearMeasured"]
+        XCTAssertTrue(app.reveal(row))
         XCTAssertTrue(row.label.contains("0,4"), row.label)
         XCTAssertLessThanOrEqual(actions, 3)
     }
@@ -66,8 +66,9 @@ final class MaintenanceUITests: XCTestCase {
         let app = launch("maintenance")
         openBikeDetail(app)
         XCTAssertTrue(app.buttons["component.Kette"].waitForExistence(timeout: 8))
-        app.buttons["componentMenu.Kette"].tapWhenReady()
-        app.buttons["componentReplace.Kette"].tapWhenReady()
+        app.tapRevealed(app.buttons["component.Kette"])
+        XCTAssertTrue(app.buttons["componentReplace.Kette"].waitForExistence(timeout: 8), "Ersetzen an der Seite der Komponente")
+        app.buttons["componentReplace.Kette"].tap()
         let name = app.textFields["replaceName"]
         name.tapWhenReady()
         let current = (name.value as? String) ?? ""
@@ -76,11 +77,7 @@ final class MaintenanceUITests: XCTestCase {
         app.buttons["keyboardDone"].tapWhenReady()
         app.buttons["replaceConfirm"].tapWhenReady()
 
-        XCTAssertTrue(app.buttons["component.Kette neu"].waitForExistence(timeout: 8), "Neue Kette ist montiert")
-        XCTAssertFalse(app.buttons["component.Kette"].exists, "Die alte Kette ist nicht mehr unter den aktuellen Komponenten")
-        let old = app.buttons["previousComponent.Kette"]
-        XCTAssertTrue(old.waitForExistence(timeout: 8), "Alte Komponente bleibt unter „Frühere Komponenten“ aufrufbar")
-        old.tap()
+        // Die alte Kette bleibt aufrufbar: ihre Seite zeigt Nutzung und Status, nichts ist zurückgesetzt (T-02).
         XCTAssertTrue(app.staticTexts["detailName"].waitForExistence(timeout: 8))
         XCTAssertEqual(app.staticTexts["detailName"].label, "Kette")
         XCTAssertTrue(app.element(id: "usageUses").label.hasSuffix("4"), "Nutzung bleibt: \(app.element(id: "usageUses").label)")
@@ -88,7 +85,16 @@ final class MaintenanceUITests: XCTestCase {
         XCTAssertTrue(app.element(id: "detailStatus").label.hasSuffix("Eingelagert"), app.element(id: "detailStatus").label)
         app.navigationBars.buttons.firstMatch.tap()
 
-        app.buttons["component.Kette neu"].tapWhenReady()
+        XCTAssertTrue(app.buttons["component.Kette neu"].waitForExistence(timeout: 8), "Neue Kette ist montiert")
+        XCTAssertFalse(app.buttons["component.Kette"].exists, "Die alte Kette ist nicht mehr unter den aktuellen Komponenten")
+        let old = app.buttons["previousComponent.Kette"]
+        XCTAssertTrue(app.reveal(old), "Alte Komponente bleibt unter „Frühere Komponenten“ aufrufbar")
+        old.tap()
+        XCTAssertTrue(app.staticTexts["detailName"].waitForExistence(timeout: 8))
+        XCTAssertEqual(app.staticTexts["detailName"].label, "Kette", "Die alte Komponente öffnet ihre eigene Historie")
+        app.navigationBars.buttons.firstMatch.tap()
+
+        app.tapRevealed(app.buttons["component.Kette neu"])
         XCTAssertTrue(app.element(id: "usageUses").waitForExistence(timeout: 8))
         XCTAssertTrue(app.element(id: "usageUses").label.hasSuffix("0"), "Neue Kette startet bei 0 Nutzungen: \(app.element(id: "usageUses").label)")
         XCTAssertTrue(app.element(id: "usageDistance").label.contains("Keine Daten"), "Keine erfundene 0 km: \(app.element(id: "usageDistance").label)")
@@ -98,7 +104,7 @@ final class MaintenanceUITests: XCTestCase {
     func testAddComponentFromStarterTemplate() {
         let app = launch("basic")
         openBikeDetail(app)
-        app.buttons["componentAdd"].tapWhenReady()
+        app.tapRevealed(app.buttons["componentAdd"])
         app.buttons["componentTemplate.chain"].tapWhenReady()
         XCTAssertEqual(app.textFields["componentName"].value as? String, "Kette", "Die Vorlage schlägt den Namen vor")
         app.buttons["componentSave"].tapWhenReady()
@@ -106,13 +112,13 @@ final class MaintenanceUITests: XCTestCase {
     }
 
     @MainActor
-    func testMountedComponentIsHiddenFromTheGearListAndLinksBackToItsParent() {
+    func testMountedComponentIsHiddenFromTheGearListAndNamesItsParent() {
         let app = launch("maintenance")
         app.tabBars.buttons["Ausrüstung"].tapWhenReady()
         XCTAssertTrue(app.buttons["gear.Canyon Endurace"].waitForExistence(timeout: 8))
         XCTAssertFalse(app.buttons["gear.Kette"].exists, "Keine Komponentenstruktur in der Liste (SPEC S03)")
         app.buttons["gear.Canyon Endurace"].tap()
-        app.buttons["component.Kette"].tapWhenReady()
+        app.tapRevealed(app.buttons["component.Kette"])
         XCTAssertTrue(app.element(id: "installedIn").waitForExistence(timeout: 8))
         XCTAssertTrue(app.element(id: "installedIn").label.contains("Canyon Endurace"))
     }
@@ -121,15 +127,15 @@ final class MaintenanceUITests: XCTestCase {
     func testRuleStatusesAreSeparatedAndForecastIsAbsentWithoutEnoughData() {
         let app = launch("maintenance")
         openBikeDetail(app)
-        app.buttons["component.Kette"].tapWhenReady()
-        let interval = app.element(id: "ruleStatus.lubricated")
-        XCTAssertTrue(interval.waitForExistence(timeout: 8))
+        app.tapRevealed(app.buttons["component.Kette"])
+        let interval = app.buttons["ruleStatus.lubricated"]
+        XCTAssertTrue(app.reveal(interval))
         XCTAssertTrue(interval.label.contains("105 km"), interval.label)
         XCTAssertTrue(interval.label.contains("Prüfen"), interval.label)
-        let measurement = app.element(id: "measurementStatus")
-        XCTAssertTrue(measurement.exists)
+        let measurement = app.staticTexts["measurementStatus"]
+        XCTAssertTrue(app.reveal(measurement))
         XCTAssertTrue(measurement.label.contains("0,3"), measurement.label)
-        XCTAssertFalse(app.element(id: "forecastStatus").exists, "Prognose nur mit ausreichend Daten (SPEC 8.2)")
+        XCTAssertFalse(app.staticTexts["forecastStatus"].exists, "Prognose nur mit ausreichend Daten (SPEC 8.2)")
     }
 
     @MainActor
@@ -145,7 +151,7 @@ final class MaintenanceUITests: XCTestCase {
     func testCanAddARuleFromTheDetail() {
         let app = launch("maintenance")
         openBikeDetail(app)
-        app.buttons["ruleAdd"].tapWhenReady()
+        app.tapRevealed(app.buttons["ruleAdd"])
         let interval = app.textFields["ruleInterval"]
         interval.tapWhenReady()
         interval.typeText("200")
@@ -154,3 +160,6 @@ final class MaintenanceUITests: XCTestCase {
         XCTAssertTrue(app.element(id: "ruleStatus.cleaned").waitForExistence(timeout: 8), "Neue Regel (Standard: Gereinigt, Distanz) erscheint mit Status")
     }
 }
+
+
+

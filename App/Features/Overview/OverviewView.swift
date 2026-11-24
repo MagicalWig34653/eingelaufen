@@ -8,6 +8,9 @@ struct OverviewView: View {
     @Query(sort: \GearEntity.createdAt) private var gear: [GearEntity]
     @Query(sort: \ActivityEntity.startAt, order: .reverse) private var activities: [ActivityEntity]
     @Query(sort: \LedgerEntryEntity.occurredAt, order: .reverse) private var ledger: [LedgerEntryEntity]
+    @Query private var rules: [MaintenanceRuleEntity]
+    @Query private var events: [MaintenanceEventEntity]
+    @Query private var installations: [InstallationEntity]
     @State private var showAddGear = false
     @State private var showAddActivity = false
 
@@ -31,6 +34,24 @@ struct OverviewView: View {
                     Section("Status") {
                         LabeledContent("Ausrüstung", value: "\(activeGear.count)")
                         LabeledContent("Aktivitäten", value: "\(activities.count)")
+                    }
+                    if !hints.isEmpty {
+                        Section {
+                            ForEach(hints, id: \.id) { hint in
+                                NavigationLink { GearDetailView(gearID: hint.gearID) } label: {
+                                    VStack(alignment: .leading, spacing: 2) {
+                                        Text(hint.gearName).font(.body.weight(.semibold))
+                                        Text(hint.text).font(.footnote).foregroundStyle(.secondary)
+                                    }
+                                    .frame(minHeight: 44, alignment: .leading)
+                                }
+                                .accessibilityIdentifier("hint.\(hint.gearName)")
+                            }
+                        } header: {
+                            Text("Wartung prüfen")
+                        } footer: {
+                            Text("Hinweise beruhen auf deinen eigenen Intervallen, nicht auf dem tatsächlichen Verschleiß.")
+                        }
                     }
                     if !recentGear.isEmpty {
                         Section("Zuletzt verwendet") {
@@ -61,6 +82,26 @@ struct OverviewView: View {
         }
         .sheet(isPresented: $showAddGear) { AddGearView() }
         .sheet(isPresented: $showAddActivity) { ManualActivityView(preselectedGearID: nil) }
+    }
+
+    private struct Hint { var gearID: UUID; var gearName: String; var text: String; var id: String { "\(gearID)" } }
+
+    /// Höchstens drei Hinweise (SPEC S02), nur für aktive Ausrüstung; Text sagt „Prüfen“, nicht „Ersetzen“.
+    private var hints: [Hint] {
+        let reports = MaintenanceReports.build(gear: activeGear, rules: rules, events: events, ledger: ledger,
+                                               installations: installations, now: Date())
+        let byGear = Dictionary(reports.map { ($0.gearID, $0) }, uniquingKeysWith: { a, _ in a })
+        return MaintenanceEvaluator.topHints(reports, limit: 3).compactMap { h in
+            guard let name = activeGear.first(where: { $0.id == h.gearID })?.name, let report = byGear[h.gearID] else { return nil }
+            let text: String
+            switch h.source {
+            case .interval:
+                text = report.intervals.first { $0.rule.id == h.ruleID }.map(DisplayNames.summary) ?? DisplayNames.name(for: h.state)
+            case .measurement:
+                text = String(localized: "Messgrenze erreicht: Prüfen")
+            }
+            return Hint(gearID: h.gearID, gearName: name, text: text)
+        }
     }
 
     /// Bis zu drei zuletzt genutzte Gegenstände (nur belegte Nutzung, keine Schätzung).

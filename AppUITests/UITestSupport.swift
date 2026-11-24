@@ -42,3 +42,20 @@ extension XCUIElement {
         return self
     }
 }
+
+extension XCUIApplication {
+    /// Listen laden lazy und die schwebende Tab-Leiste verdeckt den unteren Rand: nach oben wischen, bis das Element
+    /// existiert, tippbar ist und im oberen Dreiviertel des Bildschirms liegt.
+    @discardableResult
+    func reveal(_ element: XCUIElement, attempts: Int = 8) -> Bool {
+        var n = 0
+        func ready() -> Bool { element.exists && element.isHittable && element.frame.midY < frame.height * 0.75 }
+        while !(element.waitForExistence(timeout: 2) && ready()) && n < attempts { swipeUp(); n += 1 }
+        return ready() || element.exists
+    }
+
+    func tapRevealed(_ element: XCUIElement, file: StaticString = #filePath, line: UInt = #line) {
+        XCTAssertTrue(reveal(element), "Element fehlt: \(element)", file: file, line: line)
+        element.tap()
+    }
+}

@@ -1,6 +1,6 @@
 #!/bin/bash
 # Kerntests und App-Tests (Simulator „Eingelaufen iPhone“, selbst anlegen: siehe docs/STATUS.md).
-# Nutzung: scripts/test.sh [core|app|ui]   (Standard: core + app; ui nur die UI-Tests)
+# Nutzung: scripts/test.sh [core|app|ui] [Klasse[/Test] ...]   (Standard: core + app; ui nur die UI-Tests; optional Klassen/Tests, z. B. MaintenanceUITests/testX)
 set -eu
 cd "$(dirname "$0")/.."
 SPARSAM="${SPARSAM:-$HOME/Development/orchestrator/tools/sparsam}"
@@ -13,7 +13,7 @@ fi
 if [ "$what" = all ] || [ "$what" = app ] || [ "$what" = ui ]; then
   xcodegen generate --quiet
   case "$what" in
-    ui) only="-only-testing:EingelaufenUITests" ;;
+    ui) only="-only-testing:EingelaufenUITests"; if [ $# -gt 1 ]; then only=""; shift; for t in "$@"; do only="$only -only-testing:EingelaufenUITests/$t"; done; fi ;;
     app) only="-only-testing:EingelaufenTests" ;;
     *) only="" ;;
   esac
