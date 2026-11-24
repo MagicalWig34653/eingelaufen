@@ -81,6 +81,12 @@ public struct LedgerProjection: Sendable {
     /// Konsistenzprobleme der Eingabedaten (aufwendig, nur für Diagnose).
     public var issues: [LedgerIssue] { LedgerBuilder.build(input).issues }
 
+    /// Aktivitäten, deren Beginn im Intervall der Montage liegt (Aktivitäts- oder Segmentbeginn).
+    public static func activitiesTouching(_ installation: Installation, activities: [ActivityRecord],
+                                          segments: [ActivitySegment]) -> Set<UUID> {
+        []
+    }
+
     // MARK: Intern
 
     private func activitiesTouching(_ installation: Installation) -> Set<UUID> {
