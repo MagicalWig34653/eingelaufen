@@ -36,7 +36,7 @@ final class AppModel {
         case .invalidDuration: "Die Dauer muss größer als 0 sein."
         case .invalidDistance: "Die Distanz darf nicht negativ sein."
         case .startsInFuture: "Der Beginn darf nicht in der Zukunft liegen."
-        case nil: "Das hat nicht geklappt. Bitte versuche es noch einmal."
+        case .component, .maintenance, .invalidRule, .ruleNotFound, .notImplemented, nil: "Das hat nicht geklappt. Bitte versuche es noch einmal."
         }
     }
 }

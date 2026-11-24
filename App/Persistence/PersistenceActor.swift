@@ -13,6 +13,11 @@ enum PersistenceError: Error, Equatable {
     case invalidDuration
     case invalidDistance
     case startsInFuture
+    case component(ComponentPlanError)
+    case maintenance(MaintenanceEntryError)
+    case invalidRule
+    case ruleNotFound(UUID)
+    case notImplemented
 }
 
 /// Entscheidung des Nutzers zu Apple Health im Onboarding (SPEC S01 Schritt 2). Die Verbindung selbst kommt mit M3.
@@ -42,6 +47,28 @@ enum GearCommand: Sendable {
     case setGearStatus(id: UUID, status: GearStatus, effectiveAt: Date)
     case addManualActivity(ManualActivityInput)
     case completeOnboarding(OnboardingChoice)
+    // M5: Komponenten und Wartung
+    /// Neues Teil anlegen und sofort montieren (Starter-Vorlage, SPEC S04).
+    case addComponent(parent: UUID, item: GearItem, at: Date)
+    case mountComponent(child: UUID, parent: UUID, at: Date)
+    case unmountComponent(child: UUID, at: Date)
+    case moveComponent(child: UUID, to: UUID, at: Date)
+    /// „Ersetzen“ (SPEC 4.4): neues Teil, alte Montage endet, altes Teil optional einlagern/ausmustern.
+    case replaceComponent(old: UUID, with: GearItem, oldBecomes: GearStatus?, at: Date)
+    case recordMaintenance(MaintenanceInput)
+    case setMaintenanceRule(MaintenanceRule)
+    case removeMaintenanceRule(UUID)
+}
+
+/// Wartungseingabe (SPEC S07): Datum = jetzt, wenn `performedAt == nil`; alles Weitere optional.
+struct MaintenanceInput: Sendable, Equatable {
+    var id = UUID()
+    var gearID: UUID
+    var kind: MaintenanceKind
+    var performedAt: Date?
+    var measurement: Double?
+    var costMinor: Int?
+    var notes: String?
 }
 
 struct CommandOutcome: Sendable, Equatable {
@@ -56,7 +83,7 @@ struct AppSettingsValue: Sendable, Equatable {
 }
 
 enum OutboxKind: String, Sendable, CaseIterable {
-    case gearChanged, activityChanged, onboardingCompleted, dataReplaced
+    case gearChanged, activityChanged, onboardingCompleted, dataReplaced, maintenanceChanged
 }
 
 struct OutboxItem: Sendable, Equatable, Identifiable {
@@ -188,6 +215,7 @@ actor PersistenceActor {
         case .setGearStatus(let id, let status, let effectiveAt): try setStatus(id, status, effectiveAt: effectiveAt, now: now)
         case .addManualActivity(let input): try addManualActivity(input, now: now)
         case .completeOnboarding(let choice): try completeOnboarding(choice, now: now)
+        default: throw PersistenceError.notImplemented
         }
     }
 
