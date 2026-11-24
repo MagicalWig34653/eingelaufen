@@ -5,3 +5,5 @@ DerivedData/
 xcuserdata/
 .DS_Store
 CLAUDE.local.md
+# Lokale Signierung (Team-ID gehört nicht ins öffentliche Repo)
+.signing.local

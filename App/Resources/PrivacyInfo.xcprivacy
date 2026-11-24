@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyLists-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- Eingelaufen: lokal, kein Konto, kein Netzwerk, kein Analytics, keine Drittanbieter-SDKs. Nichts wird erhoben oder geteilt. -->
+	<key>NSPrivacyTracking</key>
+	<false/>
+	<key>NSPrivacyTrackingDomains</key>
+	<array/>
+	<key>NSPrivacyCollectedDataTypes</key>
+	<array/>
+	<!-- Keine „Required Reason“-APIs im eigenen Code (kein UserDefaults, keine Dateizeitstempel, keine Systemlaufzeit, kein Speicherplatz). -->
+	<key>NSPrivacyAccessedAPITypes</key>
+	<array/>
+</dict>
+</plist>

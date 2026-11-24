@@ -14,6 +14,7 @@ Native iOS-App (Swift 6, SwiftUI, SwiftData, HealthKit, ActivityKit, WidgetKit, 
 
 ## Harte Regeln
 - **Keine Team-Signierung** (registriert App IDs im Developer-Portal), nichts in App Store Connect, kein TestFlight ohne Lino. Simulator-Builds laufen mit `CODE_SIGNING_ALLOWED=NO`.
+  - **Ausnahme (Lino, 24.11.2026, HITL):** für internes TestFlight (nur Lino) darf `scripts/archive.sh` mit automatischer Signierung archivieren (registriert die App ID `de.linolaske.eingelaufen`). Die Team-ID steht nie im Repo (gitignorierte `.signing.local` oder `EINGELAUFEN_TEAM`). Upload nur über `tools/testflight-upload.sh` nach Freigabe des Brains; keine Einreichung, keine externen Tester; den App-Eintrag in App Store Connect legt Lino an.
 - **Bauen/Testen:** `project.yml` ist die Quelle, `Eingelaufen.xcodeproj` ist generiert und ignoriert (`xcodegen generate`). `Packages/GearCore/test.sh` (Kern), `scripts/test.sh app` (App-Tests), `scripts/test.sh ui` (UI-Tests), `scripts/screenshots.sh` (hell/dunkel/XXL nach `docs/screenshots/m2/`). Simulator „Eingelaufen iPhone“, nur ein Gerät. Alles über `~/Development/orchestrator/tools/sparsam`.
 - **UI:** Texte im String Catalog (`App/Resources/Localizable.xcstrings`), Accessibility-Identifier für UI-Tests, Schreiben nur über `PersistenceActor`-Befehle (`GearCommand`), Lesen per `@Query`.
 - Rechenlogik gehört in `GearCore` (keine UI, keine Persistenz, kein HealthKit, keine Systemuhr) und wird test-first geschrieben. Jeder Spec-Pflichttest T-xx hat einen benannten Test.
