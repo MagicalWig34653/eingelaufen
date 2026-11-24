@@ -58,6 +58,20 @@ final class ScreenshotUITests: XCTestCase {
 
     /// M5: Komponenten, Wartung, Regel-/Messwert-Status, Hinweise (hell/dunkel stellt der Aufrufer ein).
     @MainActor
+    func testNestedScreens() {
+        let tag = ProcessInfo.processInfo.environment["SCREENSHOT_TAG"] ?? "light"
+        let app = launch("nested")
+        app.tabBars.buttons["Ausrüstung"].tapWhenReady()
+        app.buttons["gear.Canyon Endurace"].tapWhenReady()
+        XCTAssertTrue(app.buttons["component.Laufrad"].waitForExistence(timeout: 8))
+        app.tapRevealed(app.buttons["component.Laufrad"])
+        app.tapRevealed(app.buttons["component.Reifen"])
+        XCTAssertTrue(app.element(id: "installedIn").waitForExistence(timeout: 8))
+        XCTAssertTrue(app.element(id: "installedIn").label.contains("Canyon Endurace › Laufrad"))
+        shot(app, "\(tag)-m5-6-verschachtelt-pfad")
+    }
+
+    @MainActor
     func testMaintenanceScreens() {
         let tag = ProcessInfo.processInfo.environment["SCREENSHOT_TAG"] ?? "light"
         let app = launch("maintenance")

@@ -14,7 +14,7 @@ run() { # tag appearance content_size
   xcrun simctl ui "$UDID" appearance "$2"; xcrun simctl ui "$UDID" content_size "$3"
   TEST_RUNNER_SCREENSHOT_DIR="$OUT" TEST_RUNNER_SCREENSHOT_TAG="$1" $SPARSAM xcodebuild test \
     -project Eingelaufen.xcodeproj -scheme Eingelaufen -destination "id=$UDID" -derivedDataPath build/DerivedData \
-    -only-testing:EingelaufenUITests/ScreenshotUITests/testMaintenanceScreens CODE_SIGNING_ALLOWED=NO 2>&1 | grep -E "error:|TEST (SUCCEEDED|FAILED)"
+    -only-testing:EingelaufenUITests/ScreenshotUITests/testMaintenanceScreens -only-testing:EingelaufenUITests/ScreenshotUITests/testNestedScreens CODE_SIGNING_ALLOWED=NO 2>&1 | grep -E "error:|TEST (SUCCEEDED|FAILED)"
 }
 run light light large
 run dark dark large
