@@ -15,9 +15,38 @@ enum Fixtures {
         case "basic":
             try? await persistence.load(basic)
             _ = try? await persistence.apply(.completeOnboarding(OnboardingChoice(categories: [.cycling, .running], health: .later)), now: at(day: 0))
+        case "maintenance":
+            try? await persistence.load(maintenance)
+            _ = try? await persistence.apply(.completeOnboarding(OnboardingChoice(categories: [.cycling], health: .later)), now: at(day: 0))
         default:
             break   // „fresh“: frischer Start mit Onboarding
         }
+    }
+
+    /// Rennrad mit montierter Kette (seit Tag 0), vier Fahrten, Schmierung an Tag 3, Messung an Tag 9, zwei Regeln an der Kette:
+    /// Schmieren alle 100 km (Vorwarnung 20 km) und Messgrenze 0,5. Seit der Schmierung: 35 + 40 + 30 = 105 km → fällig.
+    static var maintenance: GearDataset {
+        let bike = GearItem(name: "Canyon Endurace", createdAt: at(day: 0), category: .cycling, subtype: .roadBike)
+        let chain = GearItem(name: "Kette", createdAt: at(day: 0), category: .cycling)
+        var d = GearDataset()
+        d.gear = [bike, chain]
+        d.statusChanges = d.gear.map { GearStatusChange(gearID: $0.id, status: .active, effectiveAt: at(day: 0)) }
+        d.installations = [Installation(parentGearID: bike.id, childGearID: chain.id, startedAt: at(day: 0))]
+        for (day, km) in [(2.0, 42.3), (4, 35), (6, 40), (9, 30)] {
+            let a = ActivityRecord(source: .manual, sportType: SportCategory.cycling.defaultSportType, startAt: at(day: day),
+                                   endAt: at(day: day).addingTimeInterval(5_400), distanceMeters: km * 1_000, durationSeconds: 5_400)
+            d.activities.append(a)
+            d.assignments.append(ActivityGearAssignment(activityID: a.id, gearID: bike.id, origin: .manual, createdAt: at(day: day)))
+        }
+        d.maintenanceEvents = [
+            MaintenanceEvent(gearID: chain.id, kind: .lubricated, performedAt: at(day: 3)),
+            MaintenanceEvent(gearID: chain.id, kind: .wearMeasured, performedAt: at(day: 9), measurement: 0.3),
+        ]
+        d.maintenanceRules = [
+            MaintenanceRule(gearID: chain.id, kind: .lubricated, metric: .distance, intervalValue: 100_000, warningLeadValue: 20_000),
+            MaintenanceRule(gearID: chain.id, kind: .wearMeasured, metric: .distance, intervalValue: 0.5),
+        ]
+        return d
     }
 
     static var basic: GearDataset {
