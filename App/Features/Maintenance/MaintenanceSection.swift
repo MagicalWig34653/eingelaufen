@@ -9,21 +9,25 @@ struct MaintenanceSection: View {
     let isArchived: Bool
     let components: [(id: UUID, name: String)]
     @Binding var componentSheet: ComponentSheet?
+    @Binding var form: MaintenanceFormKind?
+    @Binding var ruleSheet: RuleSheet?
+    @Binding var partDialog: Bool
     @Environment(AppModel.self) private var model
     @Query private var events: [MaintenanceEventEntity]
     @Query private var rules: [MaintenanceRuleEntity]
     @Query private var ledger: [LedgerEntryEntity]
     @Query private var installations: [InstallationEntity]
     @Query private var gearRows: [GearEntity]
-    @State private var form: MaintenanceFormKind?
-    @State private var ruleSheet: RuleSheet?
-    @State private var partDialog = false
 
-    init(gearID: UUID, isArchived: Bool, components: [(id: UUID, name: String)], componentSheet: Binding<ComponentSheet?>) {
+    init(gearID: UUID, isArchived: Bool, components: [(id: UUID, name: String)], componentSheet: Binding<ComponentSheet?>,
+         form: Binding<MaintenanceFormKind?>, ruleSheet: Binding<RuleSheet?>, partDialog: Binding<Bool>) {
         self.gearID = gearID
         self.isArchived = isArchived
         self.components = components
         _componentSheet = componentSheet
+        _form = form
+        _ruleSheet = ruleSheet
+        _partDialog = partDialog
         _events = Query(filter: #Predicate { $0.gearID == gearID }, sort: \.performedAt, order: .reverse)
         _rules = Query(filter: #Predicate { $0.gearID == gearID })
         _ledger = Query(filter: #Predicate { $0.gearID == gearID })
@@ -77,14 +81,6 @@ struct MaintenanceSection: View {
             .padding(.vertical, 4)
         }
         .listRowInsets(EdgeInsets(top: 4, leading: 12, bottom: 4, trailing: 12))
-        .sheet(item: $form) { MaintenanceFormView(gearID: gearID, kind: $0.kind) }
-        .sheet(item: $ruleSheet) { RuleFormView(gearID: gearID, editing: $0.rule) }
-        .confirmationDialog("Teil wechseln", isPresented: $partDialog, titleVisibility: .visible) {
-            Button("Teil einbauen") { componentSheet = .add }
-            ForEach(components, id: \.id) { c in
-                Button("„\(c.name)“ ersetzen") { componentSheet = .replace(c.id) }
-            }
-        }
     }
 
     private func perform(_ action: QuickAction) {

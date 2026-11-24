@@ -16,6 +16,9 @@ struct GearDetailView: View {
     @State private var confirmArchive = false
     @State private var showAddActivity = false
     @State private var componentSheet: ComponentSheet?
+    @State private var maintenanceForm: MaintenanceFormKind?
+    @State private var ruleSheet: RuleSheet?
+    @State private var partDialog = false
     @Query private var mounted: [InstallationEntity]
     @Query private var childInstallations: [InstallationEntity]
     @Query private var allInstallations: [InstallationEntity]
@@ -80,7 +83,7 @@ struct GearDetailView: View {
             ComponentsSection(gearID: gearID, isArchived: status == .archived, sheet: $componentSheet)
             MaintenanceSection(gearID: gearID, isArchived: status == .archived,
                                components: childInstallations.compactMap { c in allGear.first { $0.id == c.childGearID }.map { (id: $0.id, name: $0.name) } },
-                               componentSheet: $componentSheet)
+                               componentSheet: $componentSheet, form: $maintenanceForm, ruleSheet: $ruleSheet, partDialog: $partDialog)
             Section("Aktionen") {
                 Button("Aktivität eintragen", systemImage: "plus.circle") { showAddActivity = true }
                     .disabled(status == .archived)
@@ -110,6 +113,14 @@ struct GearDetailView: View {
             Text("Die Ausrüstung wird ausgeblendet, nicht gelöscht. Ihr Verlauf bleibt erhalten.")
         }
         .sheet(isPresented: $showAddActivity) { ManualActivityView(preselectedGearID: gearID) }
+        .sheet(item: $maintenanceForm) { MaintenanceFormView(gearID: gearID, kind: $0.kind) }
+        .sheet(item: $ruleSheet) { RuleFormView(gearID: gearID, editing: $0.rule) }
+        .confirmationDialog("Teil wechseln", isPresented: $partDialog, titleVisibility: .visible) {
+            Button("Teil einbauen") { componentSheet = .add }
+            ForEach(childInstallations.compactMap { c in allGear.first { $0.id == c.childGearID } }, id: \.id) { c in
+                Button("„\(c.name)“ ersetzen") { componentSheet = .replace(c.id) }
+            }
+        }
         .sheet(item: $componentSheet) { sheet in
             switch sheet {
             case .add: AddComponentSheet(parentID: gearID)

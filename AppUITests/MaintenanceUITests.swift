@@ -94,6 +94,7 @@ final class MaintenanceUITests: XCTestCase {
         XCTAssertEqual(app.staticTexts["detailName"].label, "Kette", "Die alte Komponente öffnet ihre eigene Historie")
         app.navigationBars.buttons.firstMatch.tap()
 
+        app.swipeDown(); app.swipeDown()   // nach dem Zurück steht die Liste weiter unten
         app.tapRevealed(app.buttons["component.Kette neu"])
         XCTAssertTrue(app.element(id: "usageUses").waitForExistence(timeout: 8))
         XCTAssertTrue(app.element(id: "usageUses").label.hasSuffix("0"), "Neue Kette startet bei 0 Nutzungen: \(app.element(id: "usageUses").label)")
@@ -160,6 +161,8 @@ final class MaintenanceUITests: XCTestCase {
         XCTAssertTrue(app.element(id: "ruleStatus.cleaned").waitForExistence(timeout: 8), "Neue Regel (Standard: Gereinigt, Distanz) erscheint mit Status")
     }
 }
+
+
 
 
 

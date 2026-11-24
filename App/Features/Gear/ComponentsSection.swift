@@ -2,6 +2,10 @@ import GearCore
 import SwiftData
 import SwiftUI
 
+/// Wertbasierte Navigation zu einem Gegenstand. Das Ziel wird nur beim Öffnen gebaut; ein Closure-Ziel würde im Detail
+/// bei jeder Auswertung ein weiteres `GearDetailView` samt Abfragen anlegen (Endlosschleife, per `sample` belegt).
+struct GearRoute: Hashable { var id: UUID }
+
 /// Welches Blatt für Komponenten gerade offen ist (gehört dem Ausrüstungsdetail, damit Wartung und Komponenten es teilen).
 enum ComponentSheet: Identifiable, Hashable {
     case add
@@ -42,7 +46,7 @@ struct ComponentsSection: View {
             }
             ForEach(current, id: \.installationID) { entry in
                 let childName = name(entry.childID)
-                NavigationLink { GearDetailView(gearID: entry.childID) } label: {
+                NavigationLink(value: GearRoute(id: entry.childID)) {
                     VStack(alignment: .leading, spacing: 2) {
                         Text(childName)
                         Text("seit \(DisplayNames.day(entry.startedAt))").font(.footnote).foregroundStyle(.secondary)
@@ -59,7 +63,7 @@ struct ComponentsSection: View {
             Section("Frühere Komponenten") {
                 ForEach(previous, id: \.installationID) { entry in
                     let childName = name(entry.childID)
-                    NavigationLink { GearDetailView(gearID: entry.childID) } label: {
+                    NavigationLink(value: GearRoute(id: entry.childID)) {
                         VStack(alignment: .leading, spacing: 2) {
                             Text(childName)
                             Text("\(DisplayNames.day(entry.startedAt)) bis \(DisplayNames.day(entry.endedAt ?? entry.startedAt))")

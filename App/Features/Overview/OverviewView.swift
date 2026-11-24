@@ -38,7 +38,7 @@ struct OverviewView: View {
                     if !hints.isEmpty {
                         Section {
                             ForEach(hints, id: \.id) { hint in
-                                NavigationLink { GearDetailView(gearID: hint.gearID) } label: {
+                                NavigationLink(value: GearRoute(id: hint.gearID)) {
                                     VStack(alignment: .leading, spacing: 2) {
                                         Text(hint.gearName).font(.body.weight(.semibold))
                                         Text(hint.text).font(.footnote).foregroundStyle(.secondary)
@@ -56,7 +56,7 @@ struct OverviewView: View {
                     if !recentGear.isEmpty {
                         Section("Zuletzt verwendet") {
                             ForEach(recentGear, id: \.id) { g in
-                                NavigationLink { GearDetailView(gearID: g.id) } label: { GearRow(gear: g) }
+                                NavigationLink(value: GearRoute(id: g.id)) { GearRow(gear: g) }
                             }
                         }
                     }

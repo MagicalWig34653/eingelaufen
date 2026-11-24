@@ -32,13 +32,13 @@ struct MainTabs: View {
     var body: some View {
         TabView(selection: $selection) {
             Tab("Übersicht", systemImage: "square.grid.2x2", value: AppTab.overview) {
-                NavigationStack { OverviewView(showSettings: $showSettings) }
+                NavigationStack { OverviewView(showSettings: $showSettings).navigationDestination(for: GearRoute.self) { GearDetailView(gearID: $0.id) } }
             }
             Tab("Ausrüstung", systemImage: "figure.outdoor.cycle", value: AppTab.gear) {
-                NavigationStack { GearListView(showSettings: $showSettings) }
+                NavigationStack { GearListView(showSettings: $showSettings).navigationDestination(for: GearRoute.self) { GearDetailView(gearID: $0.id) } }
             }
             Tab("Verlauf", systemImage: "clock.arrow.circlepath", value: AppTab.history) {
-                NavigationStack { HistoryView(showSettings: $showSettings) }
+                NavigationStack { HistoryView(showSettings: $showSettings).navigationDestination(for: GearRoute.self) { GearDetailView(gearID: $0.id) } }
             }
         }
         .sheet(isPresented: $showSettings) { SettingsView() }

@@ -42,7 +42,7 @@ struct GearListView: View {
                     ForEach(sections, id: \.0) { category, items in
                         Section(DisplayNames.name(for: category)) {
                             ForEach(items, id: \.id) { g in
-                                NavigationLink { GearDetailView(gearID: g.id) } label: { GearRow(gear: g) }
+                                NavigationLink(value: GearRoute(id: g.id)) { GearRow(gear: g) }
                                     .accessibilityIdentifier("gear.\(g.name)")
                             }
                         }
