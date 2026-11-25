@@ -265,6 +265,15 @@ private func importer(_ p: PersistenceActor, _ source: DebugHealthSource) -> Hea
 
     // MARK: HealthKit-Anbindung
 
+    /// F-14: Lese-Begründung, dazu die Schreib-Begründung, die App Store Connect bei HealthKit-Apps verlangen kann
+    /// (ITMS-90683). Sie sagt ehrlich, dass nichts geschrieben wird.
+    @Test func infoPlistExplainsHealthAccessAndSaysNothingIsWritten() {
+        let share = Bundle.main.object(forInfoDictionaryKey: "NSHealthShareUsageDescription") as? String
+        let update = Bundle.main.object(forInfoDictionaryKey: "NSHealthUpdateUsageDescription") as? String
+        #expect(share?.contains("liest deine Trainings") == true)
+        #expect(update?.contains("schreibt keine Daten") == true)
+    }
+
     @Test func onlyWorkoutsAndDistancesAreRead() {
         let ids = Set(HealthKitWorkoutSource.readTypes.map(\.identifier))
         #expect(ids.contains(HKObjectType.workoutType().identifier))
