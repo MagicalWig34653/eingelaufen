@@ -103,8 +103,9 @@ public struct ImportSummary: Hashable, Sendable {
 
 public protocol ImportStore: Sendable {
     func importState() async throws -> ImportState
-    /// Datensätze **und** Anker in einem Commit (SPEC 6.1 Punkt 6).
-    func commitImport(_ changes: WorkoutChanges, now: Date) async throws -> ImportSummary
+    /// Datensätze **und** Anker in einem Commit (SPEC 6.1 Punkt 6). `since` ist der Zeitraum, mit dem abgefragt wurde:
+    /// Hat er sich inzwischen geändert, darf der Anker nicht gespeichert werden.
+    func commitImport(_ changes: WorkoutChanges, since: Date?, now: Date) async throws -> ImportSummary
     func recordImportFailure(_ failure: ImportFailure, now: Date) async throws
 }
 

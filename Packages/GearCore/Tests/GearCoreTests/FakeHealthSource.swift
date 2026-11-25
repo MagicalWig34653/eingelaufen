@@ -93,12 +93,12 @@ actor MemoryImportStore: ImportStore {
         return state
     }
 
-    func commitImport(_ changes: WorkoutChanges, now: Date) async throws -> ImportSummary {
+    func commitImport(_ changes: WorkoutChanges, since: Date?, now: Date) async throws -> ImportSummary {
         if failCommit { throw Broken() }
         let out = ImportReconciler.reconcile(dataset, changes.batch, now: now,
                                              policy: EnginePolicy(autoAssignSoleCandidate: true))
         dataset = out.dataset
-        state.anchor = changes.anchor
+        if since == state.since { state.anchor = changes.anchor }
         state.lastSuccessAt = now
         state.lastFailure = nil
         state.retryPending = false

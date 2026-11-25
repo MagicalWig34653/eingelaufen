@@ -3,10 +3,12 @@ import XCTest
 extension XCTestCase {
     /// `fixture`: fresh (Onboarding), empty (fertig, ohne Daten), basic (5 Ausrüstungsteile, 4 Aktivitäten).
     @MainActor
-    func launch(_ fixture: String) -> XCUIApplication {
+    func launch(_ fixture: String, health: String? = nil) -> XCUIApplication {
         let app = XCUIApplication()
         app.launchArguments = ["-EingelaufenInMemory", "-UITestFixture", fixture,
                                "-AppleLanguages", "(de)", "-AppleLocale", "de_DE"]
+        // Fake-Trainingsquelle (Debug): workouts, empty, locked. Ohne Angabe liefert sie nichts.
+        if let health { app.launchArguments += ["-UITestHealth", health] }
         app.launch()
         return app
     }

@@ -86,7 +86,7 @@ public actor HealthImporter {
             return await fail(Self.failure(for: error))
         }
         do {
-            return .success(try await store.commitImport(changes, now: now()))
+            return .success(try await store.commitImport(changes, since: state.since, now: now()))
         } catch {
             return await fail(.storeError)
         }

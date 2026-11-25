@@ -56,6 +56,36 @@ final class ScreenshotUITests: XCTestCase {
         }
     }
 
+    /// M3: Onboarding-Schritt 2, importierter Verlauf, Import-Status (abgeglichen, nichts sichtbar, ausstehend).
+    @MainActor
+    func testHealthScreens() {
+        let tag = ProcessInfo.processInfo.environment["SCREENSHOT_TAG"] ?? "light"
+        var app = launch("fresh", health: "workouts")
+        app.buttons["onboardingNext"].tapWhenReady()
+        XCTAssertTrue(app.buttons["onboardingHealthConnect"].waitForExistence(timeout: 8))
+        shot(app, "\(tag)-m3-1-onboarding-health")
+        app.buttons["onboardingHealthConnect"].tap()
+        app.buttons["onboardingFirstGearLater"].tapWhenReady()
+        app.tabBars.buttons["Verlauf"].tapWhenReady()
+        XCTAssertTrue(app.element(labelContaining: "42,3 km").waitForExistence(timeout: 10))
+        shot(app, "\(tag)-m3-2-verlauf-importiert")
+        app.buttons["settingsButton"].tap()
+        XCTAssertTrue(app.element(labelContaining: "Abgeglichen").waitForExistence(timeout: 10))
+        shot(app, "\(tag)-m3-3-einstellungen-abgeglichen")
+        app.terminate()
+
+        for (scenario, status, name) in [("empty", "Keine Trainings sichtbar", "4-einstellungen-nichts-sichtbar"),
+                                         ("locked", "Import ausstehend", "5-einstellungen-ausstehend")] {
+            app = launch("empty", health: scenario)
+            app.buttons["settingsButton"].tapWhenReady()
+            if scenario == "empty" { shot(app, "\(tag)-m3-6-einstellungen-nicht-verbunden") }
+            app.tapRevealed(app.buttons["healthConnect"])
+            XCTAssertTrue(app.element(labelContaining: status).waitForExistence(timeout: 10))
+            shot(app, "\(tag)-m3-\(name)")
+            app.terminate()
+        }
+    }
+
     /// M5: Komponenten, Wartung, Regel-/Messwert-Status, Hinweise (hell/dunkel stellt der Aufrufer ein).
     @MainActor
     func testNestedScreens() {

@@ -11,9 +11,11 @@ final class AppModel {
     /// Verständliche Meldung zum letzten fehlgeschlagenen Befehl (wird im Alert gezeigt).
     var errorMessage: String?
 
-    init(container: ModelContainer) {
+    init(container: ModelContainer, healthSource: any HealthWorkoutSource = HealthKitWorkoutSource()) {
         persistence = PersistenceActor(modelContainer: container)
     }
+
+    func connectHealth(_ window: ImportWindow) async -> Bool { false }
 
     @discardableResult
     func run(_ command: GearCommand) async -> CommandOutcome? {

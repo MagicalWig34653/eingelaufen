@@ -26,6 +26,12 @@ targets:
     dependencies:
       - package: GearCore
         product: GearCore
+    # HealthKit (nur lesen) samt Background Delivery (PLATTFORM F-01). Wirksam erst in signierten Builds.
+    entitlements:
+      path: App/Eingelaufen.entitlements
+      properties:
+        com.apple.developer.healthkit: true
+        com.apple.developer.healthkit.background-delivery: true
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: de.linolaske.eingelaufen
@@ -39,6 +45,8 @@ targets:
         INFOPLIST_KEY_UISupportedInterfaceOrientations: UIInterfaceOrientationPortrait
         INFOPLIST_KEY_LSApplicationCategoryType: public.app-category.healthcare-fitness
         INFOPLIST_KEY_ITSAppUsesNonExemptEncryption: NO
+        # Nur der Lese-Schlüssel: die App schreibt nie nach Health (F-14).
+        INFOPLIST_KEY_NSHealthShareUsageDescription: "Eingelaufen liest deine Trainings (Sportart, Zeit, Dauer, Distanz), damit deine Ausrüstung mitzählt. Es wird nichts in Health geschrieben und nichts hochgeladen."
   EingelaufenTests:
     type: bundle.unit-test
     platform: iOS

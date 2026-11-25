@@ -19,14 +19,17 @@ enum PersistenceError: Error, Equatable {
     case ruleNotFound(UUID)
 }
 
-/// Entscheidung des Nutzers zu Apple Health im Onboarding (SPEC S01 Schritt 2). Die Verbindung selbst kommt mit M3.
+/// Entscheidung des Nutzers zu Apple Health (SPEC S01 Schritt 2). „Verbunden“ heißt: eingerichtet, nicht „erlaubt“
+/// (ob Lesezugriff erteilt wurde, ist nicht erkennbar, F-04).
 enum HealthChoice: String, Codable, Sendable {
-    case undecided, later
+    case undecided, later, connected
 }
 
 struct OnboardingChoice: Sendable, Equatable {
     var categories: [SportCategory]
     var health: HealthChoice
+    /// Zeitraum des Erstimports, nur bei `health == .connected`.
+    var importWindow: ImportWindow = .standard
 }
 
 /// Manuelle Aktivität (SPEC 6.4): Sportart, Beginn, Dauer, optional Distanz und Ausrüstung.
@@ -57,6 +60,9 @@ enum GearCommand: Sendable {
     case recordMaintenance(MaintenanceInput)
     case setMaintenanceRule(MaintenanceRule)
     case removeMaintenanceRule(UUID)
+    // M3: Apple Health
+    /// Verbindung einrichten oder Zeitraum ändern.
+    case connectHealth(ImportWindow)
 }
 
 /// Wartungseingabe (SPEC S07): Datum = jetzt, wenn `performedAt == nil`; alles Weitere optional.
@@ -78,7 +84,9 @@ struct CommandOutcome: Sendable, Equatable {
 struct AppSettingsValue: Sendable, Equatable {
     var onboardingCompleted: Bool
     var healthChoice: HealthChoice
+    /// 0 = alle verfügbaren.
     var importWindowDays: Int?
+    var healthImportStartAt: Date?
 }
 
 enum OutboxKind: String, Sendable, CaseIterable {
@@ -197,7 +205,7 @@ actor PersistenceActor {
         let row = try fetchAll(AppSettingsEntity.self).first
         return AppSettingsValue(onboardingCompleted: row?.onboardingCompleted ?? false,
                                 healthChoice: row.flatMap { HealthChoice(rawValue: $0.healthChoiceRaw) } ?? .undecided,
-                                importWindowDays: row?.importWindowDays)
+                                importWindowDays: row?.importWindowDays, healthImportStartAt: nil)
     }
 
     func outbox(pendingOnly: Bool) throws -> [OutboxItem] {
@@ -223,6 +231,7 @@ actor PersistenceActor {
         case .recordMaintenance(let input): try recordMaintenance(input, now: now)
         case .setMaintenanceRule(let rule): try setRule(rule, now: now)
         case .removeMaintenanceRule(let id): try removeRule(id, now: now)
+        case .connectHealth: CommandOutcome()
         }
     }
 
