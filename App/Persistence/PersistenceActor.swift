@@ -205,7 +205,7 @@ actor PersistenceActor {
         let row = try fetchAll(AppSettingsEntity.self).first
         return AppSettingsValue(onboardingCompleted: row?.onboardingCompleted ?? false,
                                 healthChoice: row.flatMap { HealthChoice(rawValue: $0.healthChoiceRaw) } ?? .undecided,
-                                importWindowDays: row?.importWindowDays, healthImportStartAt: nil)
+                                importWindowDays: row?.importWindowDays, healthImportStartAt: row?.healthImportStartAt)
     }
 
     func outbox(pendingOnly: Bool) throws -> [OutboxItem] {
@@ -231,7 +231,7 @@ actor PersistenceActor {
         case .recordMaintenance(let input): try recordMaintenance(input, now: now)
         case .setMaintenanceRule(let rule): try setRule(rule, now: now)
         case .removeMaintenanceRule(let id): try removeRule(id, now: now)
-        case .connectHealth: CommandOutcome()
+        case .connectHealth(let window): try connectHealth(window, now: now)
         }
     }
 
@@ -298,16 +298,13 @@ actor PersistenceActor {
     }
 
     private func completeOnboarding(_ choice: OnboardingChoice, now: Date) throws -> CommandOutcome {
-        let settings: AppSettingsEntity
-        if let existing = try fetchAll(AppSettingsEntity.self).first {
-            settings = existing
-        } else {
-            settings = AppSettingsEntity()
-            settings.createdAt = now
-            modelContext.insert(settings)
-        }
+        let settings = try settingsRow(now: now)
         settings.onboardingCompleted = true
-        settings.healthChoiceRaw = choice.health.rawValue
+        if choice.health == .connected {
+            _ = try connectHealth(choice.importWindow, now: now)
+        } else {
+            settings.healthChoiceRaw = choice.health.rawValue
+        }
         var profiles: [UUID] = []
         for category in choice.categories {
             let raw = category.defaultSportType.rawValue
@@ -321,6 +318,33 @@ actor PersistenceActor {
             }
         }
         try enqueue(.onboardingCompleted, profiles, now: now)
+        return CommandOutcome()
+    }
+
+    private func settingsRow(now: Date) throws -> AppSettingsEntity {
+        if let existing = try fetchAll(AppSettingsEntity.self).first { return existing }
+        let settings = AppSettingsEntity()
+        settings.createdAt = now
+        modelContext.insert(settings)
+        return settings
+    }
+
+    /// Verbindung einrichten bzw. Zeitraum ändern. Der Beginn bleibt bei gleichem Zeitraum fest (er gehört zum Anker);
+    /// ein neuer Zeitraum ist eine neue Abfrage: Anker verwerfen, der Import ist idempotent.
+    private func connectHealth(_ window: ImportWindow, now: Date) throws -> CommandOutcome {
+        let settings = try settingsRow(now: now)
+        let days = window.days ?? 0
+        if settings.healthChoiceRaw != HealthChoice.connected.rawValue || settings.importWindowDays != days {
+            settings.healthChoiceRaw = HealthChoice.connected.rawValue
+            settings.importWindowDays = days
+            settings.healthImportStartAt = window.startDate(now: now)
+            if let cursor = try fetchAll(ImportCursorEntity.self).first {
+                cursor.anchorData = nil
+                cursor.lastSuccessAt = nil
+                cursor.lastError = nil
+                cursor.retryPending = false
+            }
+        }
         return CommandOutcome()
     }
 
@@ -498,6 +522,104 @@ actor PersistenceActor {
         try fetchAll(type).forEach(modelContext.delete)
     }
 }
+
+// MARK: Apple Health (M3)
+
+/// Speicherseite des Imports (ARCHITEKTUR 5.1, 5.3): Datensätze, Ledger, Outbox und Anker in **einem** Commit.
+extension PersistenceActor: ImportStore {
+    func importState() throws -> ImportState {
+        let settings = try settings()
+        let cursor = try fetchAll(ImportCursorEntity.self).first
+        return ImportState(isEnabled: settings.healthChoice == .connected, since: settings.healthImportStartAt,
+                           anchor: cursor?.anchorData, lastSuccessAt: cursor?.lastSuccessAt,
+                           lastFailure: cursor?.lastError.flatMap(ImportFailure.init(rawValue:)),
+                           retryPending: cursor?.retryPending ?? false)
+    }
+
+    func commitImport(_ changes: WorkoutChanges, since: Date?, now: Date) throws -> ImportSummary {
+        modelContext.autosaveEnabled = false
+        do {
+            // ponytail: lädt je Abgleich den ganzen Bestand; erst eingrenzen, wenn die M9-Messung (10.000) es verlangt.
+            let before = try dataset()
+            let output = ImportReconciler.reconcile(before, changes.batch, now: now)
+            if !output.isUnchanged { try write(output, replacing: before, now: now) }
+            let cursor = try cursorRow()
+            // Zeitraum während der Abfrage geändert: Anker passt nicht mehr, nächster Abgleich fragt alles neu ab.
+            if try settings().healthImportStartAt == since { cursor.anchorData = changes.anchor }
+            cursor.lastSuccessAt = now
+            cursor.lastError = nil
+            cursor.retryPending = false
+            try modelContext.save()
+            return ImportSummary(output)
+        } catch {
+            modelContext.rollback()
+            throw error
+        }
+    }
+
+    func recordImportFailure(_ failure: ImportFailure, now: Date) throws {
+        modelContext.autosaveEnabled = false
+        do {
+            let cursor = try cursorRow()
+            cursor.lastError = failure.rawValue
+            cursor.retryPending = failure != .unavailable
+            try modelContext.save()
+        } catch {
+            modelContext.rollback()
+            throw error
+        }
+    }
+
+    private func cursorRow() throws -> ImportCursorEntity {
+        if let existing = try fetchAll(ImportCursorEntity.self).first { return existing }
+        let cursor = ImportCursorEntity()
+        modelContext.insert(cursor)
+        return cursor
+    }
+
+    /// Schreibt den Unterschied zwischen altem und abgeglichenem Stand und baut das betroffene Ledger neu.
+    private func write(_ output: ReconcileOutput, replacing before: GearDataset, now: Date) throws {
+        let after = output.dataset
+        try persist(after.activities, was: before.activities, id: \ActivityEntity.id,
+                    insert: ActivityEntity.init, update: { $0.update(from: $1) })
+        try persist(after.segments, was: before.segments, id: \ActivitySegmentEntity.id,
+                    insert: ActivitySegmentEntity.init, update: { $0.update(from: $1) })
+        // Zuordnungen sind unveränderlich: es kommen nur welche hinzu oder fallen weg.
+        try persist(after.assignments, was: before.assignments, id: \AssignmentEntity.id,
+                    insert: AssignmentEntity.init, update: { _, _ in })
+        try persist(after.pendings, was: before.pendings, id: \PendingEntity.id,
+                    insert: PendingEntity.init, update: { $0.update(from: $1) })
+
+        let affected = Set(output.inserted + output.updated + output.tombstoned)
+        guard !affected.isEmpty else { return }
+        if affected.count > 100 {   // Erstimport: ein Neuaufbau ist billiger als hunderte Einzelabfragen.
+            try rebuildLedgerAndSummaries(input: after.ledgerInput, gear: after.gear.map(\.id), now: now, replacingEverything: true)
+        } else {
+            try rebuildLedger(for: affected, now: now)
+        }
+        try enqueue(.activityChanged, affected.sorted { $0.uuidString < $1.uuidString }, now: now)
+    }
+
+    private func persist<Value: Identifiable & Equatable, Row: PersistentModel>(
+        _ new: [Value], was old: [Value], id: KeyPath<Row, UUID>,
+        insert: (Value) -> Row, update: (Row, Value) -> Void) throws where Value.ID == UUID {
+        guard new != old else { return }
+        let previous = Dictionary(old.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
+        let rows = Dictionary(try fetchAll(Row.self).map { ($0[keyPath: id], $0) }, uniquingKeysWith: { first, _ in first })
+        for value in new {
+            if previous[value.id] == nil {
+                modelContext.insert(insert(value))
+            } else if previous[value.id] != value, let row = rows[value.id] {
+                update(row, value)
+            }
+        }
+        let kept = Set(new.map(\.id))
+        for value in old where !kept.contains(value.id) {
+            if let row = rows[value.id] { modelContext.delete(row) }
+        }
+    }
+}
+
 
 private extension Array where Element: Identifiable, Element.ID == UUID {
     func sortedByID() -> [Element] { sorted { $0.id.uuidString < $1.id.uuidString } }

@@ -163,7 +163,9 @@ private func importer(_ p: PersistenceActor, _ source: DebugHealthSource) -> Hea
         #expect(d.pendings.map(\.state) == [.obsolete])
         #expect(d.gear.count == 3)
         #expect(try await p.ledger().isEmpty)
-        #expect(try await p.usage(of: shoe) == UsageSummary(uses: 0, distanceMeters: .noData, durationSeconds: .noData))
+        // Kern-Konvention: ohne jeden Eintrag ist 0 eine wahre Messung (nichts war zu verbuchen).
+        #expect(try await p.usage(of: shoe) == UsageSummary(uses: 0, distanceMeters: .measured(0, isComplete: true),
+                                                          durationSeconds: .measured(0, isComplete: true)))
     }
 
     // MARK: T-08 und Segmente

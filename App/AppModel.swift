@@ -11,11 +11,42 @@ final class AppModel {
     /// Verständliche Meldung zum letzten fehlgeschlagenen Befehl (wird im Alert gezeigt).
     var errorMessage: String?
 
+    private let health: HealthImporter
+
     init(container: ModelContainer, healthSource: any HealthWorkoutSource = HealthKitWorkoutSource()) {
-        persistence = PersistenceActor(modelContainer: container)
+        let persistence = PersistenceActor(modelContainer: container)
+        self.persistence = persistence
+        health = HealthImporter(source: healthSource, store: persistence, now: { Date() })
     }
 
-    func connectHealth(_ window: ImportWindow) async -> Bool { false }
+    // MARK: Apple Health (SPEC 6.1)
+
+    /// Systemdialog für die Leserechte. Ein Erfolg sagt nichts darüber, was der Nutzer erlaubt hat (F-04).
+    func requestHealthAccess() async -> Bool {
+        do {
+            try await health.requestAuthorization()
+            return true
+        } catch {
+            errorMessage = error as? HealthSourceError == .unavailable
+                ? "Apple Health ist auf diesem Gerät nicht verfügbar."
+                : "Apple Health konnte nicht geöffnet werden. Bitte versuche es noch einmal."
+            return false
+        }
+    }
+
+    /// Verbinden bzw. Zeitraum ändern und sofort abgleichen.
+    @discardableResult
+    func connectHealth(_ window: ImportWindow) async -> Bool {
+        guard await requestHealthAccess(), await run(.connectHealth(window)) != nil else { return false }
+        await startHealth()
+        return true
+    }
+
+    /// App-Start und Vordergrund: Beobachter registrieren und abgleichen (ohne Verbindung passiert nichts).
+    func startHealth() async { await health.start() }
+    func syncHealth() async { await health.sync() }
+    /// Nach dem Entsperren: ausstehenden Import nachholen (F-03).
+    func retryHealthIfPending() async { await health.retryIfPending() }
 
     @discardableResult
     func run(_ command: GearCommand) async -> CommandOutcome? {

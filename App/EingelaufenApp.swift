@@ -1,43 +1,75 @@
+import GearCore
 import SwiftData
 import SwiftUI
+import UIKit
 
-@main
-struct EingelaufenApp: App {
-    private let container: ModelContainer
-    @State private var model: AppModel
-    @State private var ready = false
-    private let fixture: String?
+/// Einmal je Prozess: Speicher und Modell, gemeinsam für App-Delegate (Hintergrundstart) und Oberfläche.
+@MainActor
+enum AppEnvironment {
+    static let arguments = ProcessInfo.processInfo.arguments
 
-    init() {
-        let args = ProcessInfo.processInfo.arguments
-        // Tests und UI-Tests starten mit -EingelaufenInMemory: nichts berührt den echten Speicher.
-        let inMemory = args.contains("-EingelaufenInMemory")
+    static func value(of flag: String) -> String? {
+        arguments.firstIndex(of: flag).flatMap { arguments.indices.contains($0 + 1) ? arguments[$0 + 1] : nil }
+    }
+
+    static let container: ModelContainer = {
         do {
-            container = try Stores.makeContainer(inMemory: inMemory)
+            // Tests und UI-Tests starten mit -EingelaufenInMemory: nichts berührt den echten Speicher.
+            return try Stores.makeContainer(inMemory: arguments.contains("-EingelaufenInMemory"))
         } catch {
             fatalError("Eingelaufen: Speicher kann nicht geöffnet werden: \(error)")
         }
-        _model = State(initialValue: AppModel(container: container))
+    }()
+
+    static let model: AppModel = {
         #if DEBUG
-        fixture = args.firstIndex(of: "-UITestFixture").flatMap { args.indices.contains($0 + 1) ? args[$0 + 1] : nil }
-        #else
-        fixture = nil
+        // Tests berühren auch HealthKit nie.
+        if arguments.contains("-EingelaufenInMemory") {
+            return AppModel(container: container, healthSource: DebugHealthSource.scenario(value(of: "-UITestHealth")))
+        }
         #endif
+        return AppModel(container: container)
+    }()
+}
+
+final class AppDelegate: NSObject, UIApplicationDelegate {
+    /// Beobachter bei **jedem** Start registrieren, auch wenn HealthKit die App im Hintergrund weckt (F-02).
+    func application(_ application: UIApplication,
+                     didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil) -> Bool {
+        Task { await AppEnvironment.model.startHealth() }
+        return true
     }
+
+    func applicationProtectedDataDidBecomeAvailable(_ application: UIApplication) {
+        Task { await AppEnvironment.model.retryHealthIfPending() }
+    }
+}
+
+@main
+struct EingelaufenApp: App {
+    @UIApplicationDelegateAdaptor private var delegate: AppDelegate
+    @Environment(\.scenePhase) private var scenePhase
+    @State private var ready = false
 
     var body: some Scene {
         WindowGroup {
             Group {
                 if ready { RootView() } else { ProgressView().task { await prepare() } }
             }
-            .environment(model)
+            .environment(AppEnvironment.model)
         }
-        .modelContainer(container)
+        .modelContainer(AppEnvironment.container)
+        // Konsistenzabgleich bei jedem Wechsel in den Vordergrund (SPEC 6.1 Punkt 5).
+        .onChange(of: scenePhase) { _, phase in
+            if phase == .active { Task { await AppEnvironment.model.startHealth() } }
+        }
     }
 
     private func prepare() async {
         #if DEBUG
-        if let fixture { await Fixtures.apply(fixture, to: model.persistence) }
+        if let fixture = AppEnvironment.value(of: "-UITestFixture") {
+            await Fixtures.apply(fixture, to: AppEnvironment.model.persistence)
+        }
         #endif
         ready = true
     }

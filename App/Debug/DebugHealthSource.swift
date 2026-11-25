@@ -30,5 +30,25 @@ actor DebugHealthSource: HealthWorkoutSource {
     }
 
     func startObserving(_ handler: @escaping ObserverHandler) async throws { isObserved = true }
+
+    /// Szenarien der UI-Tests (`-UITestHealth <name>`).
+    static func scenario(_ name: String?) -> DebugHealthSource {
+        func workout(_ id: String, _ category: SportCategory, day: Double, minutes: Double, km: Double) -> IncomingWorkout {
+            let start = Fixtures.at(day: day)
+            return IncomingWorkout(sourceID: id, sportType: category.defaultSportType, startAt: start,
+                                   endAt: start.addingTimeInterval(minutes * 60), distanceMeters: km * 1_000,
+                                   durationSeconds: minutes * 60, sourceName: "Testuhr")
+        }
+        let ride = workout("ui-ride", .cycling, day: 2, minutes: 95, km: 42.3)
+        let run = workout("ui-run", .running, day: 4, minutes: 40, km: 7.5)
+        return switch name {
+        case "workouts":
+            DebugHealthSource(batches: [ImportBatch(upserts: [ride, run]), ImportBatch(deletedSourceIDs: [run.sourceID])])
+        case "locked":
+            DebugHealthSource(batches: [ImportBatch(upserts: [ride])], errors: [.databaseInaccessible])
+        default:
+            DebugHealthSource(batches: [])
+        }
+    }
 }
 #endif

@@ -1110,6 +1110,296 @@
           }
         }
       }
+    },
+    "Letzte 30 Tage": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Letzte 30 Tage"
+          }
+        }
+      }
+    },
+    "Letzte 90 Tage": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Letzte 90 Tage"
+          }
+        }
+      }
+    },
+    "Letzte 365 Tage": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Letzte 365 Tage"
+          }
+        }
+      }
+    },
+    "Alle verfügbaren": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Alle verfügbaren"
+          }
+        }
+      }
+    },
+    "Nicht verbunden": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nicht verbunden"
+          }
+        }
+      }
+    },
+    "Abgleich steht aus": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Abgleich steht aus"
+          }
+        }
+      }
+    },
+    "Import ausstehend": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Import ausstehend"
+          }
+        }
+      }
+    },
+    "Keine Trainings sichtbar": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Keine Trainings sichtbar"
+          }
+        }
+      }
+    },
+    "Abgeglichen": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Abgeglichen"
+          }
+        }
+      }
+    },
+    "Health nicht verfügbar": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Health nicht verfügbar"
+          }
+        }
+      }
+    },
+    "Abgleich fehlgeschlagen": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Abgleich fehlgeschlagen"
+          }
+        }
+      }
+    },
+    "Das Gerät war gesperrt. Der Abgleich wird nach dem Entsperren oder beim nächsten Öffnen nachgeholt.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Das Gerät war gesperrt. Der Abgleich wird nach dem Entsperren oder beim nächsten Öffnen nachgeholt."
+          }
+        }
+      }
+    },
+    "Prüfe in der Health-App, ob Eingelaufen Trainings lesen darf. Vielleicht gibt es im gewählten Zeitraum auch noch keine.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Prüfe in der Health-App, ob Eingelaufen Trainings lesen darf. Vielleicht gibt es im gewählten Zeitraum auch noch keine."
+          }
+        }
+      }
+    },
+    "Auf diesem Gerät gibt es kein Apple Health. Aktivitäten kannst du von Hand eintragen.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Auf diesem Gerät gibt es kein Apple Health. Aktivitäten kannst du von Hand eintragen."
+          }
+        }
+      }
+    },
+    "Die Trainings konnten nicht gespeichert werden. Es geht nichts verloren, der Abgleich wird wiederholt.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Die Trainings konnten nicht gespeichert werden. Es geht nichts verloren, der Abgleich wird wiederholt."
+          }
+        }
+      }
+    },
+    "Health hat nicht geantwortet. Der Abgleich wird beim nächsten Öffnen wiederholt.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Health hat nicht geantwortet. Der Abgleich wird beim nächsten Öffnen wiederholt."
+          }
+        }
+      }
+    },
+    "Welche Trainings sollen übernommen werden?": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Welche Trainings sollen übernommen werden?"
+          }
+        }
+      }
+    },
+    "Wann neue Trainings im Hintergrund ankommen, entscheidet iOS; beim Öffnen gleicht die App ab. Du kannst das auch später in den Einstellungen verbinden und Aktivitäten von Hand eintragen.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wann neue Trainings im Hintergrund ankommen, entscheidet iOS; beim Öffnen gleicht die App ab. Du kannst das auch später in den Einstellungen verbinden und Aktivitäten von Hand eintragen."
+          }
+        }
+      }
+    },
+    "Mit Apple Health verbinden": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mit Apple Health verbinden"
+          }
+        }
+      }
+    },
+    "Apple Health ist auf diesem Gerät nicht verfügbar.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Apple Health ist auf diesem Gerät nicht verfügbar."
+          }
+        }
+      }
+    },
+    "Apple Health konnte nicht geöffnet werden. Bitte versuche es noch einmal.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Apple Health konnte nicht geöffnet werden. Bitte versuche es noch einmal."
+          }
+        }
+      }
+    },
+    "Status": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Status"
+          }
+        }
+      }
+    },
+    "Letzter Abgleich": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Letzter Abgleich"
+          }
+        }
+      }
+    },
+    "Noch keiner": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Noch keiner"
+          }
+        }
+      }
+    },
+    "Importierte Trainings": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Importierte Trainings"
+          }
+        }
+      }
+    },
+    "Zeitraum": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zeitraum"
+          }
+        }
+      }
+    },
+    "Jetzt abgleichen": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Jetzt abgleichen"
+          }
+        }
+      }
+    },
+    "Eingelaufen liest nur Trainings und schreibt nichts nach Health. Wann neue Trainings im Hintergrund ankommen, entscheidet iOS.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Eingelaufen liest nur Trainings und schreibt nichts nach Health. Wann neue Trainings im Hintergrund ankommen, entscheidet iOS."
+          }
+        }
+      }
+    },
+    "Trage eine Aktivität ein oder verbinde Apple Health in den Einstellungen, damit deine Ausrüstung mitzählt.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Trage eine Aktivität ein oder verbinde Apple Health in den Einstellungen, damit deine Ausrüstung mitzählt."
+          }
+        }
+      }
     }
   },
   "version": "1.0"

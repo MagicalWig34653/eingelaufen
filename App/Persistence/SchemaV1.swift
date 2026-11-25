@@ -158,7 +158,9 @@ enum SchemaV1: VersionedSchema {
         var missingInSourceSince: Date?
 
         init() {}
-        init(_ a: ActivityRecord) {
+        init(_ a: ActivityRecord) { update(from: a) }
+
+        func update(from a: ActivityRecord) {
             id = a.id
             sourceRaw = a.source.rawValue
             sourceID = a.sourceID
@@ -170,13 +172,15 @@ enum SchemaV1: VersionedSchema {
             deletedAt = a.deletedAt
             isIndoor = a.isIndoor
             revision = a.revision
+            sourceBundleID = a.sourceBundleID
+            sourceName = a.sourceName
         }
 
         var value: ActivityRecord {
             ActivityRecord(id: id, source: ActivitySource(rawValue: sourceRaw) ?? .manual, sourceID: sourceID,
                            sportType: SportType(rawValue: sportTypeRaw), startAt: startAt, endAt: endAt,
                            distanceMeters: distanceMeters, durationSeconds: durationSeconds, deletedAt: deletedAt,
-                           isIndoor: isIndoor, revision: revision)
+                           isIndoor: isIndoor, revision: revision, sourceBundleID: sourceBundleID, sourceName: sourceName)
         }
     }
 
@@ -189,7 +193,9 @@ enum SchemaV1: VersionedSchema {
         var distanceMeters: Double?
 
         init() {}
-        init(_ s: ActivitySegment) {
+        init(_ s: ActivitySegment) { update(from: s) }
+
+        func update(from s: ActivitySegment) {
             id = s.id
             activityID = s.activityID
             sportTypeRaw = s.sportType.rawValue
@@ -329,7 +335,9 @@ enum SchemaV1: VersionedSchema {
         var resolutionRaw = PendingResolution.none.rawValue
 
         init() {}
-        init(_ p: PendingAssignment) {
+        init(_ p: PendingAssignment) { update(from: p) }
+
+        func update(from p: PendingAssignment) {
             id = p.id
             activityID = p.activityID
             stateRaw = p.state.rawValue
@@ -363,8 +371,10 @@ enum SchemaV1: VersionedSchema {
         var id = AppSettingsEntity.singletonID
         var onboardingCompleted = false
         var healthChoiceRaw = HealthChoice.undecided.rawValue
-        /// Zeitraum des Erstimports in Tagen (M3); `nil` = noch nicht gewählt.
+        /// Zeitraum des Erstimports in Tagen (M3); `nil` = noch nicht gewählt, 0 = alle verfügbaren.
         var importWindowDays: Int?
+        /// Fester Beginn dieses Zeitraums (SPEC 5.1 `healthImportStartAt`); `nil` bei „alle“.
+        var healthImportStartAt: Date?
         var createdAt = Date(timeIntervalSince1970: 0)
 
         init() {}

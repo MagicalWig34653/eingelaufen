@@ -5,7 +5,8 @@ import SwiftUI
 /// Verlauf (SPEC S06), Stand M2: Aktivitäten, neueste zuerst. Filter und Timeline mit Wartungen folgen in M9.
 struct HistoryView: View {
     @Binding var showSettings: Bool
-    @Query(sort: \ActivityEntity.startAt, order: .reverse) private var activities: [ActivityEntity]
+    @Query(filter: #Predicate<ActivityEntity> { $0.deletedAt == nil }, sort: \.startAt, order: .reverse)
+    private var activities: [ActivityEntity]
     @State private var showAddActivity = false
 
     var body: some View {
@@ -14,7 +15,7 @@ struct HistoryView: View {
                 ContentUnavailableView {
                     Label("Noch keine Aktivitäten", systemImage: "clock.arrow.circlepath")
                 } description: {
-                    Text("Trage eine Aktivität ein, damit deine Ausrüstung mitzählt.")
+                    Text("Trage eine Aktivität ein oder verbinde Apple Health in den Einstellungen, damit deine Ausrüstung mitzählt.")
                 } actions: {
                     Button("Aktivität eintragen") { showAddActivity = true }.buttonStyle(.borderedProminent)
                         .accessibilityIdentifier("historyAdd")

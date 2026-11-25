@@ -2,13 +2,17 @@ import GearCore
 import SwiftData
 import SwiftUI
 
-/// Onboarding (SPEC S01): höchstens drei Schritte, kein Konto. Schritt 2 (Apple Health) bietet bis M3 nur „Später“.
+/// Onboarding (SPEC S01): höchstens drei Schritte, kein Konto. Schritt 2 verbindet Apple Health mit Zeitraumwahl
+/// oder vertagt es; importiert wird erst nach Schritt 3, damit die erste Ausrüstung schon zugeordnet werden kann.
 struct OnboardingView: View {
     @Environment(AppModel.self) private var model
     @Query private var gear: [GearEntity]
     @State private var step = 0
     @State private var categories: Set<SportCategory> = []
     @State private var showAddGear = false
+    @State private var window = ImportWindow.standard
+    @State private var connectHealth = false
+    @State private var asking = false
 
     var body: some View {
         NavigationStack {
@@ -42,33 +46,48 @@ struct OnboardingView: View {
             Text("Mehrfachauswahl möglich. Du kannst das später ändern.").foregroundStyle(.secondary)
             ForEach(SportCategory.allCases, id: \.self) { category in
                 let selected = categories.contains(category)
-                Button {
+                choiceRow(selected: selected, identifier: "sport.\(category.rawValue)") {
                     if selected { categories.remove(category) } else { categories.insert(category) }
                 } label: {
-                    HStack(spacing: 12) {
-                        SymbolBadge(systemName: DisplayNames.symbol(for: category))
-                        Text(DisplayNames.name(for: category)).foregroundStyle(.primary)
-                        Spacer()
-                        Image(systemName: selected ? "checkmark.circle.fill" : "circle")
-                            .foregroundStyle(selected ? Color.accentColor : .secondary)
-                    }
-                    .padding(8)
-                    .frame(minHeight: 48)
-                    .background(.fill.tertiary, in: RoundedRectangle(cornerRadius: 12))
+                    SymbolBadge(systemName: DisplayNames.symbol(for: category))
+                    Text(DisplayNames.name(for: category)).foregroundStyle(.primary)
                 }
-                .buttonStyle(.plain)
-                .accessibilityAddTraits(selected ? .isSelected : [])
-                .accessibilityIdentifier("sport.\(category.rawValue)")
             }
         }
+    }
+
+    private func choiceRow(selected: Bool, identifier: String, action: @escaping () -> Void,
+                           @ViewBuilder label: () -> some View) -> some View {
+        Button(action: action) {
+            HStack(spacing: 12) {
+                label()
+                Spacer()
+                Image(systemName: selected ? "checkmark.circle.fill" : "circle")
+                    .foregroundStyle(selected ? Color.accentColor : .secondary)
+            }
+            .padding(8)
+            .frame(minHeight: 48)
+            .background(.fill.tertiary, in: RoundedRectangle(cornerRadius: 12))
+        }
+        .buttonStyle(.plain)
+        .accessibilityAddTraits(selected ? .isSelected : [])
+        .accessibilityIdentifier(identifier)
     }
 
     private var healthStep: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("Apple Health").font(.title2.bold())
             Text("Eingelaufen kann deine Workouts aus Apple Health lesen, damit Ausrüstung ohne Handarbeit mitzählt. Es wird nichts geschrieben und nichts hochgeladen.")
-            Text("Die Verbindung richtest du später ein. Bis dahin trägst du Aktivitäten von Hand ein, die App ist auch so voll nutzbar.")
-                .foregroundStyle(.secondary)
+            Text("Welche Trainings sollen übernommen werden?").font(.headline).padding(.top, 4)
+            ForEach(ImportWindow.allCases, id: \.self) { option in
+                choiceRow(selected: window == option, identifier: "window.\(option.days ?? 0)") {
+                    window = option
+                } label: {
+                    Text(HealthTexts.window(option)).foregroundStyle(.primary).padding(.leading, 8)
+                }
+            }
+            Text("Wann neue Trainings im Hintergrund ankommen, entscheidet iOS; beim Öffnen gleicht die App ab. Du kannst das auch später in den Einstellungen verbinden und Aktivitäten von Hand eintragen.")
+                .font(.footnote).foregroundStyle(.secondary)
         }
     }
 
@@ -92,8 +111,22 @@ struct OnboardingView: View {
                 Button("Weiter") { step = 1 }
                     .buttonStyle(.borderedProminent).accessibilityIdentifier("onboardingNext")
             case 1:
-                Button("Später") { step = 2 }
-                    .buttonStyle(.borderedProminent).accessibilityIdentifier("onboardingHealthLater")
+                Button("Mit Apple Health verbinden") {
+                    asking = true
+                    Task {
+                        if await model.requestHealthAccess() {
+                            connectHealth = true
+                            step = 2
+                        }
+                        asking = false
+                    }
+                }
+                .buttonStyle(.borderedProminent).disabled(asking).accessibilityIdentifier("onboardingHealthConnect")
+                Button("Später") {
+                    connectHealth = false
+                    step = 2
+                }
+                .disabled(asking).accessibilityIdentifier("onboardingHealthLater")
             default:
                 if gear.isEmpty {
                     Button("Vorlage wählen") { showAddGear = true }
@@ -112,6 +145,11 @@ struct OnboardingView: View {
     }
 
     private func finish() {
-        Task { await model.run(.completeOnboarding(OnboardingChoice(categories: categories.sorted { $0.rawValue < $1.rawValue }, health: .later))) }
+        let choice = OnboardingChoice(categories: categories.sorted { $0.rawValue < $1.rawValue },
+                                      health: connectHealth ? .connected : .later, importWindow: window)
+        Task {
+            await model.run(.completeOnboarding(choice))
+            await model.startHealth()
+        }
     }
 }

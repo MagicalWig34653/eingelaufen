@@ -6,7 +6,8 @@ import SwiftUI
 struct OverviewView: View {
     @Binding var showSettings: Bool
     @Query(sort: \GearEntity.createdAt) private var gear: [GearEntity]
-    @Query(sort: \ActivityEntity.startAt, order: .reverse) private var activities: [ActivityEntity]
+    @Query(filter: #Predicate<ActivityEntity> { $0.deletedAt == nil }, sort: \.startAt, order: .reverse)
+    private var activities: [ActivityEntity]
     @Query(sort: \LedgerEntryEntity.occurredAt, order: .reverse) private var ledger: [LedgerEntryEntity]
     @Query private var rules: [MaintenanceRuleEntity]
     @Query private var events: [MaintenanceEventEntity]
