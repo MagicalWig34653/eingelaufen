@@ -54,7 +54,7 @@ Abhängigkeiten in Klammern. „Namensunabhängig“ heißt: kann vor E-01 start
 - Manuelle Aktivität anlegen inkl. Zuordnung (Spec 6.4) – macht die App ohne HealthKit nutzbar.
 - **DoD (= Spec Phase 0):** komplette Ausrüstung lokal anlegen/archivieren, mehrere Sportarten nutzbar, App-Tests + erste UI-Tests grün, Screenshots hell/dunkel/XXL geprüft.
 
-### M3 HealthKit-Import (M2) – Spike zuerst
+### M3 HealthKit-Import (M2) – Software umgesetzt 25.11.2026, Spike S-1 offen (Lino, `docs/spikes/S-1.md`)
 - **Spike S-1 (Gerät, Lino):** Background Delivery für Workouts auf echtem iPhone: Zustellung nach Workout-Ende, bei gesperrtem Gerät, nach Kill, nach Neustart; Messprotokoll in `docs/spikes/`.
 - Autorisierung (nur lesen, nur nötige Typen), Onboarding-Schritt 2 mit Zeitraumwahl, Erstimport, Observer + Background Delivery, Anchored Query, Vordergrund-Abgleich, Gesperrt-Fall, Löschungen, Ersatz-Erkennung, Import-Status in Einstellungen, neutrale Texte ohne Fehldiagnose.
 - **DoD:** T-05…T-08 gegen Fake-Quelle grün; Integrationsliste 14.2 „Observer + anchored requery; mehrfaches Resume und Kill/Launch“ auf Gerät protokolliert.
