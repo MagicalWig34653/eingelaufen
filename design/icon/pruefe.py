@@ -94,9 +94,10 @@ def render(icon, appearance, points, scale, out):
 
 def check_sources(design, icon):
     spec = json.loads((icon / "icon.json").read_text())
-    check("fill" in spec, f"{design.name}: Hintergrund fehlt")
     appearances = {s.get("appearance") for s in spec.get("fill-specializations", [])}
-    check({"dark", "tinted"} <= appearances, f"{design.name}: Hintergrund ohne dunkel/getönt")
+    check({None, "dark", "tinted"} <= appearances, f"{design.name}: Hintergrund ohne hell/dunkel/getönt")
+    # Ein zusätzliches "fill" überdeckt in Icon Composer die Werte je Darstellung (dunkel bleibt dann Systemgrau).
+    check("fill" not in spec, f"{design.name}: \"fill\" überdeckt den Hintergrund je Darstellung")
     groups = spec.get("groups", [])
     check(1 <= len(groups) <= 4, f"{design.name}: {len(groups)} Gruppen (erlaubt 1–4)")
     layers = [layer for group in groups for layer in group.get("layers", [])]
