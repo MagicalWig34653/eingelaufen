@@ -21,6 +21,7 @@ struct SettingsView: View {
                     LabeledContent("Version", value: version)
                 }
             }
+            .healthErrorAlert()
             .navigationTitle("Einstellungen")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {

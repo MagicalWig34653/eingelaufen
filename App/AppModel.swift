@@ -10,6 +10,9 @@ final class AppModel {
     let persistence: PersistenceActor
     /// Verständliche Meldung zum letzten fehlgeschlagenen Befehl (wird im Alert gezeigt).
     var errorMessage: String?
+    /// Meldung zum Verbinden mit Apple Health. Eigenes Feld, weil die auslösende Ansicht (auch im Blatt) sie zeigt:
+    /// ein Hinweis an der Wurzel würde das Einstellungen-Blatt schließen.
+    var healthError: String?
 
     private let health: HealthImporter
 
@@ -27,7 +30,7 @@ final class AppModel {
             try await health.requestAuthorization()
             return true
         } catch {
-            errorMessage = error as? HealthSourceError == .unavailable
+            healthError = error as? HealthSourceError == .unavailable
                 ? "Apple Health ist auf diesem Gerät nicht verfügbar."
                 : "Apple Health konnte nicht geöffnet werden. Bitte versuche es noch einmal."
             return false

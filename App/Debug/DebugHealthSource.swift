@@ -46,6 +46,8 @@ actor DebugHealthSource: HealthWorkoutSource {
             DebugHealthSource(batches: [ImportBatch(upserts: [ride, run]), ImportBatch(deletedSourceIDs: [run.sourceID])])
         case "locked":
             DebugHealthSource(batches: [ImportBatch(upserts: [ride])], errors: [.databaseInaccessible])
+        case "unavailable":
+            DebugHealthSource(batches: [], authorizationError: .unavailable)
         default:
             DebugHealthSource(batches: [])
         }

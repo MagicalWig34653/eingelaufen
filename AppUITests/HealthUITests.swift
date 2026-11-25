@@ -41,6 +41,16 @@ final class HealthUITests: XCTestCase {
     }
 
     @MainActor
+    func testUnavailableHealthIsExplainedInsideSettings() {
+        let app = launch("empty", health: "unavailable")
+        app.buttons["settingsButton"].tapWhenReady()
+        app.tapRevealed(app.buttons["healthConnect"])
+        XCTAssertTrue(app.alerts.staticTexts["Apple Health ist auf diesem Gerät nicht verfügbar."].waitForExistence(timeout: 8))
+        app.alerts.buttons["OK"].tap()
+        XCTAssertTrue(app.element(labelContaining: "Nicht verbunden").exists)
+    }
+
+    @MainActor
     func testLockedDeviceShowsPendingImportAndRecovers() {
         let app = launch("empty", health: "locked")
         app.buttons["settingsButton"].tapWhenReady()

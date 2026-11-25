@@ -259,7 +259,8 @@ private func importer(_ p: PersistenceActor, _ source: DebugHealthSource) -> Hea
         let model = AppModel(container: try Stores.makeContainer(inMemory: true), healthSource: source)
         #expect(await model.connectHealth(.days90) == false)
         #expect(try await model.persistence.importState().isEnabled == false)
-        #expect(model.errorMessage == "Apple Health ist auf diesem Gerät nicht verfügbar.")
+        #expect(model.healthError == "Apple Health ist auf diesem Gerät nicht verfügbar.")
+        #expect(model.errorMessage == nil, "die Meldung gehört zur auslösenden Ansicht, nicht zur Wurzel unter dem Blatt")
     }
 
     // MARK: HealthKit-Anbindung

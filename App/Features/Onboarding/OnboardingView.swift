@@ -35,6 +35,7 @@ struct OnboardingView: View {
             .navigationBarTitleDisplayMode(.large)
             .safeAreaInset(edge: .bottom) { actions }
         }
+        .healthErrorAlert()
         .sheet(isPresented: $showAddGear) { AddGearView() }
     }
 

@@ -71,3 +71,21 @@ struct HealthSettingsSection: View {
         }
     }
 }
+
+extension View {
+    /// Zeigt `AppModel.healthError` in der Ansicht, die verbunden hat.
+    func healthErrorAlert() -> some View { modifier(HealthErrorAlert()) }
+}
+
+private struct HealthErrorAlert: ViewModifier {
+    @Environment(AppModel.self) private var model
+
+    func body(content: Content) -> some View {
+        content.alert("Hinweis", isPresented: Binding(get: { model.healthError != nil },
+                                                      set: { if !$0 { model.healthError = nil } })) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text(model.healthError ?? "")
+        }
+    }
+}
