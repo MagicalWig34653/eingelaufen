@@ -19,14 +19,13 @@ Quelle: offizielle Apple-Dokumentation (developer.apple.com, App Review Guidelin
 | F-11 | Provisional Authorization liefert nur still ins Mitteilungszentrum (W). | Reguläre Berechtigung kontextbezogen (Spec S01); provisional nicht als Ersatz. |
 | F-12 | `BGAppRefreshTask`: ca. 30 s, kein garantierter Zeitpunkt, ein Request gleichzeitig; `submit` ab 27.0 deprecated (W). | Nur Zusatzanstoß für Abgleich und Wartungserinnerungen; API je nach Deployment Target wählen. |
 | F-13 | App Review 5.1.3(ii): „may not store personal health information in iCloud“ (W). | V1 unkritisch. **Wichtig für die vertagte CloudKit-Option (Spec 10.6/16):** Workout-abgeleitete Daten fallen voraussichtlich darunter; ein späterer Sync braucht vorab eine Klärung, was synchronisiert werden darf. Export bleibt ausdrückliche Nutzeraktion. |
-| F-14 | Privacy Manifest für App **und** Extension; UserDefaults `CA92.1`, Datei-Zeitstempel `C617.1`; Datenschutzerklärung für HealthKit-Apps Pflicht (W). `NSHealthShareUsageDescription` zum Lesen (W); ob `NSHealthUpdateUsageDescription` bei reinem Lesen entfallen darf, ist nicht ausdrücklich belegt (N). | M9-Checkliste. Nur Lese-Key setzen; in M3 prüfen, ob das ohne Absturz/Review-Hinweis geht. Datenschutzerklärung vorbereiten (Lino veröffentlicht). |
+| F-14 | Privacy Manifest für App **und** Extension; UserDefaults `CA92.1`, Datei-Zeitstempel `C617.1`; Datenschutzerklärung für HealthKit-Apps Pflicht (W). `NSHealthShareUsageDescription` zum Lesen (W); ob `NSHealthUpdateUsageDescription` bei reinem Lesen entfallen darf, ist nicht ausdrücklich belegt (N). | M9-Checkliste. Seit 25.11. stehen Lese- **und** Schreib-Begründung in der Info.plist (vorsorglich gegen ITMS-90683 beim Upload, anekdotisch in Entwicklerforen, kein Apple-Beleg); ein Schreibrecht wird nie angefragt. Datenschutzerklärung vorbereiten (Lino veröffentlicht). |
 | F-15 | SwiftData: `VersionedSchema`/`SchemaMigrationPlan` (W); prozessübergreifende Konsistenz App/Extension nicht dokumentiert (N). | Bestätigt A-03/A-05: ein Prozess, ein Schreiber. |
 
 **P-06 (Dateischutz, Entscheidung):** Der Store bleibt bei `completeUntilFirstUserAuthentication`, die Aktion „Vorschlag übernehmen“ läuft **ohne** `.authenticationRequired`. Grund: Spec 13 verlangt den Ein-Tap-Fall, die Aktion schreibt nur die eigene Datenbank (kein HealthKit), und der Sperrbildschirm zeigt ohnehin nur Sportart, Dauer und Ausrüstungsname. Umkehrbar: Wird stärkerer Schutz gewünscht, bekommen Aktionen `.authenticationRequired` und der Store `complete`; dann entfällt der Ein-Tap bei gesperrtem Gerät.
 
 ## Offene Punkte für die Gerätespikes
 - S-1: tatsächliche Verzögerung von Background Delivery für Workouts (Watch, iPhone, Drittquelle), Verhalten nach Force-Quit und Neustart, Wiederaufnahme nach Entsperren.
-- S-1: Darf `NSHealthUpdateUsageDescription` fehlen, wenn nur gelesen wird?
 - S-2: Start einer Live Activity per `LiveActivityIntent` aus Kurzbefehl/Steuerelement; Laufzeit für `Activity.update` nach HealthKit-Wake und nach Notification-Aktion.
 - S-2: Zeitbudget der Notification-Aktion im Hintergrund (Messung mit OSLog-Signposts).
 

@@ -7,7 +7,8 @@ extension XCTestCase {
         let app = XCUIApplication()
         app.launchArguments = ["-EingelaufenInMemory", "-UITestFixture", fixture,
                                "-AppleLanguages", "(de)", "-AppleLocale", "de_DE"]
-        // Fake-Trainingsquelle (Debug): workouts, empty, locked, unavailable. Ohne Angabe liefert sie nichts.
+        // Fake-Trainingsquelle (Debug): workouts, empty, locked, error, later, slow, slow-error, unavailable.
+        // Ohne Angabe liefert sie nichts.
         if let health { app.launchArguments += ["-UITestHealth", health] }
         app.launch()
         return app

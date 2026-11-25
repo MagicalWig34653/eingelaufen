@@ -45,8 +45,10 @@ targets:
         INFOPLIST_KEY_UISupportedInterfaceOrientations: UIInterfaceOrientationPortrait
         INFOPLIST_KEY_LSApplicationCategoryType: public.app-category.healthcare-fitness
         INFOPLIST_KEY_ITSAppUsesNonExemptEncryption: NO
-        # Nur der Lese-Schlüssel: die App schreibt nie nach Health (F-14).
+        # Die App liest nur (F-14). Die Schreib-Begründung steht trotzdem da: App Store Connect kann sie bei
+        # HealthKit-Apps verlangen (ITMS-90683); angefragt wird nie ein Schreibrecht (`toShare: []`).
         INFOPLIST_KEY_NSHealthShareUsageDescription: "Eingelaufen liest deine Trainings (Sportart, Zeit, Dauer, Distanz), damit deine Ausrüstung mitzählt. Es wird nichts in Health geschrieben und nichts hochgeladen."
+        INFOPLIST_KEY_NSHealthUpdateUsageDescription: "Eingelaufen schreibt keine Daten in Apple Health."
   EingelaufenTests:
     type: bundle.unit-test
     platform: iOS

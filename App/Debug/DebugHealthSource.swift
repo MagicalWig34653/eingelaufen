@@ -8,13 +8,17 @@ actor DebugHealthSource: HealthWorkoutSource {
     private let batches: [ImportBatch]
     private var errors: [HealthSourceError]
     private let authorizationError: HealthSourceError?
+    /// Verzögert jede Abfrage, damit Lade- und Wartezustände sichtbar werden.
+    private let delay: Duration
     private(set) var authorizationRequests = 0
     private(set) var isObserved = false
 
-    init(batches: [ImportBatch], errors: [HealthSourceError] = [], authorizationError: HealthSourceError? = nil) {
+    init(batches: [ImportBatch], errors: [HealthSourceError] = [], authorizationError: HealthSourceError? = nil,
+         delay: Duration = .zero) {
         self.batches = batches
         self.errors = errors
         self.authorizationError = authorizationError
+        self.delay = delay
     }
 
     func requestAuthorization() async throws {
@@ -23,6 +27,7 @@ actor DebugHealthSource: HealthWorkoutSource {
     }
 
     func fetchChanges(since: Date?, anchor: Data?) async throws -> WorkoutChanges {
+        if delay > .zero { try await Task.sleep(for: delay) }
         if !errors.isEmpty { throw errors.removeFirst() }
         let i = anchor.flatMap { Int(String(decoding: $0, as: UTF8.self)) } ?? 0
         guard i < batches.count else { return WorkoutChanges(batch: ImportBatch(), anchor: anchor) }
@@ -46,6 +51,14 @@ actor DebugHealthSource: HealthWorkoutSource {
             DebugHealthSource(batches: [ImportBatch(upserts: [ride, run]), ImportBatch(deletedSourceIDs: [run.sourceID])])
         case "locked":
             DebugHealthSource(batches: [ImportBatch(upserts: [ride])], errors: [.databaseInaccessible])
+        case "error":
+            DebugHealthSource(batches: [], errors: [.failed("test")])
+        case "later":
+            DebugHealthSource(batches: [ImportBatch(), ImportBatch(upserts: [ride])])
+        case "slow":
+            DebugHealthSource(batches: [ImportBatch(upserts: [ride])], delay: .seconds(6))
+        case "slow-error":
+            DebugHealthSource(batches: [], errors: [.failed("test")], delay: .seconds(6))
         case "unavailable":
             DebugHealthSource(batches: [], authorizationError: .unavailable)
         default:
