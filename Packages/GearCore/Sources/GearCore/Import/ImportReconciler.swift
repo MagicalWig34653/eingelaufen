@@ -19,9 +19,15 @@ public struct IncomingWorkout: Hashable, Sendable {
     public var distanceMeters: Double?
     public var durationSeconds: Double
     public var isIndoor: Bool?
+    /// Herkunft laut Quelle (Bundle-ID und Anzeigename der schreibenden App/des Geräts).
+    public var sourceBundleID: String?
+    public var sourceName: String?
+    /// Nur bei Multisport (siehe `multisportSegments`); sonst leer.
+    public var segments: [IncomingSegment]
 
     public init(sourceID: String, sportType: SportType, startAt: Date, endAt: Date,
-                distanceMeters: Double? = nil, durationSeconds: Double, isIndoor: Bool? = nil) {
+                distanceMeters: Double? = nil, durationSeconds: Double, isIndoor: Bool? = nil,
+                sourceBundleID: String? = nil, sourceName: String? = nil, segments: [IncomingSegment] = []) {
         self.sourceID = sourceID
         self.sportType = sportType
         self.startAt = startAt
@@ -29,6 +35,26 @@ public struct IncomingWorkout: Hashable, Sendable {
         self.distanceMeters = distanceMeters
         self.durationSeconds = durationSeconds
         self.isIndoor = isIndoor
+        self.sourceBundleID = sourceBundleID
+        self.sourceName = sourceName
+        self.segments = segments
+    }
+
+    public static func multisportSegments(_ parts: [IncomingSegment]) -> [IncomingSegment] { [] }
+}
+
+/// Abschnitt eines Trainings aus der Quelle. Distanz nur, wenn die Quelle sie für diesen Abschnitt liefert (T-08).
+public struct IncomingSegment: Hashable, Sendable {
+    public var sportType: SportType
+    public var startAt: Date
+    public var endAt: Date
+    public var distanceMeters: Double?
+
+    public init(sportType: SportType, startAt: Date, endAt: Date, distanceMeters: Double? = nil) {
+        self.sportType = sportType
+        self.startAt = startAt
+        self.endAt = endAt
+        self.distanceMeters = distanceMeters
     }
 }
 

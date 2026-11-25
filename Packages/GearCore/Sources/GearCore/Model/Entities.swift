@@ -82,11 +82,15 @@ public struct ActivityRecord: Identifiable, Hashable, Codable, Sendable {
     public var isIndoor: Bool?
     /// Zählt jede inhaltliche Änderung (Import-Update, Korrektur); schützt veraltete Aktionen (ARCHITEKTUR 3.1).
     public var revision: Int
+    /// Herkunft bei importierten Trainings; manuell `nil`.
+    public var sourceBundleID: String?
+    public var sourceName: String?
 
     public init(id: UUID = UUID(), source: ActivitySource = .manual, sourceID: String? = nil,
                 sportType: SportType, startAt: Date, endAt: Date,
                 distanceMeters: Double? = nil, durationSeconds: Double,
-                deletedAt: Date? = nil, isIndoor: Bool? = nil, revision: Int = 1) {
+                deletedAt: Date? = nil, isIndoor: Bool? = nil, revision: Int = 1,
+                sourceBundleID: String? = nil, sourceName: String? = nil) {
         self.id = id
         self.source = source
         self.sourceID = sourceID
@@ -98,6 +102,8 @@ public struct ActivityRecord: Identifiable, Hashable, Codable, Sendable {
         self.deletedAt = deletedAt
         self.isIndoor = isIndoor
         self.revision = revision
+        self.sourceBundleID = sourceBundleID
+        self.sourceName = sourceName
     }
 }
 
