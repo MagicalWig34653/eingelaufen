@@ -40,7 +40,12 @@ public struct IncomingWorkout: Hashable, Sendable {
         self.segments = segments
     }
 
-    public static func multisportSegments(_ parts: [IncomingSegment]) -> [IncomingSegment] { [] }
+    /// Segmente gibt es nur, wenn die Abschnitte verschiedene Sportarten haben (SPEC 5.2); Intervalle einer Sportart
+    /// bleiben eine Aktivität. Sortiert nach Beginn.
+    public static func multisportSegments(_ parts: [IncomingSegment]) -> [IncomingSegment] {
+        guard Set(parts.map(\.sportType)).count > 1 else { return [] }
+        return parts.sorted { ($0.startAt, $0.sportType.rawValue) < ($1.startAt, $1.sportType.rawValue) }
+    }
 }
 
 /// Abschnitt eines Trainings aus der Quelle. Distanz nur, wenn die Quelle sie für diesen Abschnitt liefert (T-08).
@@ -202,6 +207,7 @@ public enum ImportReconciler {
                 out.inserted.append(record.id)
                 out.ledgerChanges.append(.upsertActivity(record))
                 changedForMerge.append(record.id)
+                _ = updateSegments(of: record.id, with: w.segments)
                 if let old = pairs[w.sourceID] {
                     carryOver(from: old, to: record)
                     out.replaced.append(Replacement(old: old.id, new: record.id))
@@ -231,13 +237,17 @@ public enum ImportReconciler {
             let wasDeleted = a.deletedAt != nil
             let same = a.sportType == w.sportType && a.startAt == w.startAt && a.endAt == w.endAt
                 && a.distanceMeters == w.distanceMeters && a.durationSeconds == w.durationSeconds && a.isIndoor == w.isIndoor
-            if same && !wasDeleted { return nil }
+                && a.sourceBundleID == w.sourceBundleID && a.sourceName == w.sourceName
+            let segmentsChanged = updateSegments(of: a.id, with: w.segments)
+            if same && !segmentsChanged && !wasDeleted { return nil }
             a.sportType = w.sportType
             a.startAt = w.startAt
             a.endAt = w.endAt
             a.distanceMeters = w.distanceMeters      // nil bleibt nil
             a.durationSeconds = w.durationSeconds
             a.isIndoor = w.isIndoor
+            a.sourceBundleID = w.sourceBundleID
+            a.sourceName = w.sourceName
             a.deletedAt = nil
             a.revision += 1
             dataset.activities[i] = a
@@ -246,6 +256,50 @@ public enum ImportReconciler {
             changedForMerge.append(a.id)
             if wasDeleted { revivedIDs.insert(a.id) }
             return a
+        }
+
+        // MARK: Segmente
+
+        /// Zuordnung alt → neu: gleiche Sportart und Beginn innerhalb der Ersatz-Toleranz, jedes Ziel nur einmal.
+        func matchSegments(_ old: [ActivitySegment], to new: [IncomingSegment]) -> [Int: ActivitySegment] {
+            var result: [Int: ActivitySegment] = [:]
+            for o in old.sorted(by: { ($0.startAt, $0.id.uuidString) < ($1.startAt, $1.id.uuidString) }) {
+                let hit = new.indices.filter {
+                    result[$0] == nil && new[$0].sportType == o.sportType
+                        && abs(new[$0].startAt.timeIntervalSince(o.startAt)) <= ImportReconciler.replacementTolerance
+                }.min { abs(new[$0].startAt.timeIntervalSince(o.startAt)) < abs(new[$1].startAt.timeIntervalSince(o.startAt)) }
+                if let hit { result[hit] = o }
+            }
+            return result
+        }
+
+        /// Bringt die Segmente auf den Stand der Quelle. Passende behalten ihre ID (und damit die Zuordnung);
+        /// weggefallene verschwinden samt ihrer Zuordnung. Liefert, ob sich etwas geändert hat.
+        mutating func updateSegments(of activityID: UUID, with incoming: [IncomingSegment]) -> Bool {
+            let old = dataset.segments.filter { $0.activityID == activityID }
+            let matches = matchSegments(old, to: incoming)
+            var changed = false
+            for (i, s) in incoming.enumerated() {
+                let segment = ActivitySegment(id: matches[i]?.id ?? makeID(), activityID: activityID, sportType: s.sportType,
+                                              startAt: s.startAt, endAt: s.endAt, distanceMeters: s.distanceMeters)
+                if let j = dataset.segments.firstIndex(where: { $0.id == segment.id }) {
+                    guard dataset.segments[j] != segment else { continue }
+                    dataset.segments[j] = segment
+                } else {
+                    dataset.segments.append(segment)
+                }
+                out.ledgerChanges.append(.upsertSegment(segment))
+                changed = true
+            }
+            let kept = Set(matches.values.map(\.id))
+            for gone in old where !kept.contains(gone.id) {
+                for a in dataset.assignments where a.segmentID == gone.id { out.ledgerChanges.append(.removeAssignment(a.id)) }
+                dataset.assignments.removeAll { $0.segmentID == gone.id }
+                dataset.segments.removeAll { $0.id == gone.id }
+                out.ledgerChanges.append(.removeSegment(gone.id))
+                changed = true
+            }
+            return changed
         }
 
         var revivedIDs = Set<UUID>()
@@ -266,9 +320,18 @@ public enum ImportReconciler {
 
         /// Übernimmt Zuordnungen und einen offenen Eintrag der ersetzten Aktivität (Ursprung und Zeitstempel bleiben).
         mutating func carryOver(from old: ActivityRecord, to new: ActivityRecord) {
-            let inherited = dataset.assignments.filter { $0.activityID == old.id && $0.segmentID == nil }
-            for a in inherited {
-                let copy = ActivityGearAssignment(id: makeID(), activityID: new.id, gearID: a.gearID, origin: a.origin, createdAt: a.createdAt)
+            // Segmentzuordnungen wandern nur zu einem passenden neuen Segment (gleiche Sportart, gleicher Beginn).
+            let oldSegments = dataset.segments.filter { $0.activityID == old.id }
+            let newSegments = dataset.segments.filter { $0.activityID == new.id }
+            let matches = matchSegments(oldSegments, to: newSegments.map {
+                IncomingSegment(sportType: $0.sportType, startAt: $0.startAt, endAt: $0.endAt, distanceMeters: $0.distanceMeters)
+            })
+            let target = Dictionary(uniqueKeysWithValues: matches.map { ($0.value.id, newSegments[$0.key].id) })
+            for a in dataset.assignments.filter({ $0.activityID == old.id }) {
+                let segmentID = a.segmentID.flatMap { target[$0] }
+                if a.segmentID != nil && segmentID == nil { continue }
+                let copy = ActivityGearAssignment(id: makeID(), activityID: new.id, segmentID: segmentID, gearID: a.gearID,
+                                                  origin: a.origin, createdAt: a.createdAt)
                 dataset.assignments.append(copy)
                 out.ledgerChanges.append(.upsertAssignment(copy))
             }
@@ -340,7 +403,7 @@ public enum ImportReconciler {
         // MARK: Ähnlichkeit und Zusammenführungs-Vorschläge
 
         func similar(_ n: IncomingWorkout, _ o: ActivityRecord) -> Bool {
-            n.sportType == o.sportType
+            n.sportType == o.sportType && n.sourceBundleID == o.sourceBundleID
                 && abs(n.startAt.timeIntervalSince(o.startAt)) <= ImportReconciler.replacementTolerance
                 && abs(n.endAt.timeIntervalSince(o.endAt)) <= ImportReconciler.replacementTolerance
         }
@@ -348,7 +411,8 @@ public enum ImportReconciler {
         func makeRecord(_ w: IncomingWorkout) -> ActivityRecord {
             ActivityRecord(id: makeID(), source: .healthKit, sourceID: w.sourceID, sportType: w.sportType,
                            startAt: w.startAt, endAt: w.endAt, distanceMeters: w.distanceMeters,
-                           durationSeconds: w.durationSeconds, isIndoor: w.isIndoor)
+                           durationSeconds: w.durationSeconds, isIndoor: w.isIndoor,
+                           sourceBundleID: w.sourceBundleID, sourceName: w.sourceName)
         }
 
         static func strongMatch(_ a: ActivityRecord, _ b: ActivityRecord) -> MergeReason? {

@@ -41,9 +41,18 @@ public enum ImportWindow: Hashable, Sendable, CaseIterable {
 
     public static let standard = ImportWindow.days90
     /// `nil` = alle verfügbaren.
-    public var days: Int? { nil }
-    public init(days: Int?) { self = .all }
-    public func startDate(now: Date) -> Date? { nil }
+    public var days: Int? {
+        switch self {
+        case .days30: 30
+        case .days90: 90
+        case .days365: 365
+        case .all: nil
+        }
+    }
+
+    public init(days: Int?) { self = Self.allCases.first { $0.days == days } ?? (days == nil ? .all : .standard) }
+
+    public func startDate(now: Date) -> Date? { days.map { now.addingTimeInterval(-Double($0) * 86_400) } }
 }
 
 public enum ImportFailure: String, Hashable, Codable, Sendable {
@@ -86,7 +95,10 @@ public struct ImportSummary: Hashable, Sendable {
         self.pending = pending
     }
 
-    public init(_ output: ReconcileOutput) { self.init() }
+    public init(_ output: ReconcileOutput) {
+        self.init(inserted: output.inserted.count, updated: output.updated.count,
+                  removed: output.tombstoned.count, pending: output.pendingCreated.count)
+    }
 }
 
 public protocol ImportStore: Sendable {
@@ -101,7 +113,12 @@ public enum ImportStatus: Hashable, Sendable {
     case notConnected, waiting, pendingUnlock, noWorkoutsVisible, upToDate
     case failed(ImportFailure)
 
-    public static func evaluate(_ state: ImportState, workoutCount: Int) -> ImportStatus { .notConnected }
+    public static func evaluate(_ state: ImportState, workoutCount: Int) -> ImportStatus {
+        guard state.isEnabled else { return .notConnected }
+        if let failure = state.lastFailure { return failure == .locked ? .pendingUnlock : .failed(failure) }
+        guard state.lastSuccessAt != nil else { return .waiting }
+        return workoutCount == 0 ? .noWorkoutsVisible : .upToDate
+    }
 }
 
 /// Distanzart eines Trainings (PLATTFORM F-06). Die App bildet sie auf den HealthKit-Mengentyp ab.
@@ -109,5 +126,19 @@ public enum WorkoutDistanceKind: Hashable, Sendable, CaseIterable {
     case cycling, walkingRunning, wheelchair, swimming, downhillSnowSports, crossCountrySkiing
     case paddleSports, rowing, skatingSports
 
-    public static func of(_ type: SportType) -> WorkoutDistanceKind? { nil }
+    /// Schlüssel = `HKWorkoutActivityType.rawValue`. Multisport und alles ohne Distanztyp: `nil`.
+    public static func of(_ type: SportType) -> WorkoutDistanceKind? {
+        switch type.rawValue {
+        case 13, 74: .cycling
+        case 24, 37, 52: .walkingRunning
+        case 70, 71: .wheelchair
+        case 46: .swimming
+        case 61, 67: .downhillSnowSports
+        case 60: .crossCountrySkiing
+        case 31: .paddleSports
+        case 35: .rowing
+        case 39: .skatingSports
+        default: nil
+        }
+    }
 }
