@@ -119,6 +119,21 @@ private func importer(_ p: PersistenceActor, _ source: DebugHealthSource) -> Hea
         #expect(try await p.outbox(pendingOnly: true).contains { $0.kind == .activityChanged && $0.subjectIDs.contains(a.id) })
     }
 
+    /// Erstimport mit vielen Trainings geht den Weg „Ledger vollständig neu“ (mehr als 100 betroffene Aktivitäten).
+    @Test func largeFirstImportCountsEveryWorkoutOnce() async throws {
+        let (p, shoe) = try await connected()
+        let many = (0..<150).map { workout("W\($0)", day: -Double($0) / 3, distance: 1_000) }
+        let i = importer(p, DebugHealthSource(batches: [ImportBatch(upserts: many), batch(deleted: ["W0"])]))
+        #expect(await i.sync() == .success(ImportSummary(inserted: 150)))
+        #expect(try await p.ledger().count == 150)
+        #expect(try await p.usage(of: shoe).distanceMeters == .measured(150_000, isComplete: true))
+        await i.sync()
+        #expect(try await p.usage(of: shoe).distanceMeters == .measured(149_000, isComplete: true))
+        let incremental = try await p.ledger()
+        try await p.rebuildAll()
+        #expect(try await p.ledger() == incremental, "I-10")
+    }
+
     // MARK: T-06
 
     @Test func t06_sameUUIDUpdatesUsage() async throws {
