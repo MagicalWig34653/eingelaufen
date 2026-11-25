@@ -7,3 +7,5 @@ xcuserdata/
 CLAUDE.local.md
 # Lokale Signierung (Team-ID gehört nicht ins öffentliche Repo)
 .signing.local
+design/icon/*/render/
+__pycache__/
