@@ -71,7 +71,47 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: de.linolaske.eingelaufen.uitests
         GENERATE_INFOPLIST_FILE: YES
+  # Nur für den echten Lauf im Simulator (scripts/echter-lauf.sh), nie im Archiv der App.
+  HealthSeeder:
+    type: application
+    platform: iOS
+    sources:
+      - Tools/HealthSeeder
+    entitlements:
+      path: Tools/HealthSeeder.entitlements
+      properties:
+        com.apple.developer.healthkit: true
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: de.linolaske.eingelaufen.healthseeder
+        TARGETED_DEVICE_FAMILY: "1"
+        INFOPLIST_KEY_UILaunchScreen_Generation: YES
+        INFOPLIST_KEY_UIApplicationSceneManifest_Generation: YES
+        INFOPLIST_KEY_NSHealthShareUsageDescription: "Testhilfe: legt im Simulator ein Training an."
+        INFOPLIST_KEY_NSHealthUpdateUsageDescription: "Testhilfe: legt im Simulator ein Training an."
+  EingelaufenRealUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    sources:
+      - AppRealUITests
+      - AppUITests/UITestSupport.swift
+    dependencies:
+      - target: Eingelaufen
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: de.linolaske.eingelaufen.realuitests
+        GENERATE_INFOPLIST_FILE: YES
+        TEST_TARGET_NAME: Eingelaufen
 schemes:
+  EingelaufenEcht:
+    build:
+      targets:
+        Eingelaufen: all
+        HealthSeeder: [test]
+        EingelaufenRealUITests: [test]
+    test:
+      targets:
+        - EingelaufenRealUITests
   Eingelaufen:
     build:
       targets:
