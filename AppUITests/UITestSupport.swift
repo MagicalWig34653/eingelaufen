@@ -47,14 +47,30 @@ extension XCUIElement {
 }
 
 extension XCUIApplication {
-    /// Listen laden lazy und die schwebende Tab-Leiste verdeckt den unteren Rand: nach oben wischen, bis das Element
-    /// existiert, tippbar ist und im oberen Dreiviertel des Bildschirms liegt.
+    /// Listen laden lazy, die schwebende Tab-Leiste verdeckt den unteren Rand und Inhalt läuft unter die durchsichtige
+    /// Navigationsleiste. Das Element gilt erst als sichtbar, wenn es zwischen beiden Leisten liegt; ein Tap darüber träfe
+    /// die Statusleiste (Liste springt nach oben, Befund 25.11.). Fehlt es noch, wird gewischt; existiert es, wird es ohne
+    /// Nachlauf in die Mitte gezogen.
     @discardableResult
     func reveal(_ element: XCUIElement, attempts: Int = 8) -> Bool {
-        var n = 0
-        func ready() -> Bool { element.exists && element.isHittable && element.frame.midY < frame.height * 0.75 }
-        while !(element.waitForExistence(timeout: 2) && ready()) && n < attempts { swipeUp(); n += 1 }
-        return ready() || element.exists
+        func band() -> (top: CGFloat, bottom: CGFloat) {
+            let bar = navigationBars.firstMatch, tabs = tabBars.firstMatch
+            let top = bar.exists ? bar.frame.maxY : frame.height * 0.12
+            let bottom = tabs.exists ? tabs.frame.minY : frame.height * 0.9
+            return (top, bottom)
+        }
+        func visible() -> Bool {
+            guard element.exists, element.isHittable else { return false }
+            let (top, bottom) = band(), y = element.frame.midY
+            return y > top && y < bottom
+        }
+        for _ in 0..<attempts {
+            guard element.waitForExistence(timeout: 2) else { swipeUp(); continue }
+            if visible() { return true }
+            let (top, bottom) = band()
+            drag(by: element.frame.midY - (top + bottom) / 2)
+        }
+        return visible()
     }
 
     /// Zieht den Inhalt ruhig um `delta` Punkte nach oben (negativ: nach unten), ohne Nachlauf: der Finger hält am Ende kurz an.
