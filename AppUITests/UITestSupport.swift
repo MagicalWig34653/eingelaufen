@@ -57,6 +57,18 @@ extension XCUIApplication {
         return ready() || element.exists
     }
 
+    /// Zieht den Inhalt ruhig um `delta` Punkte nach oben (negativ: nach unten), ohne Nachlauf: der Finger hält am Ende kurz an.
+    /// Höchstens 40 % der Bildschirmhöhe je Zug, damit Start und Ziel auf dem Bildschirm bleiben.
+    func drag(by delta: CGFloat) {
+        let h = frame.height
+        let d = max(-0.4 * h, min(0.4 * h, delta))
+        let startY = d > 0 ? 0.7 * h : 0.3 * h
+        let origin = coordinate(withNormalizedOffset: .zero)
+        let start = origin.withOffset(CGVector(dx: frame.width / 2, dy: startY))
+        let end = origin.withOffset(CGVector(dx: frame.width / 2, dy: startY - d))
+        start.press(forDuration: 0.1, thenDragTo: end, withVelocity: .slow, thenHoldForDuration: 0.3)
+    }
+
     func tapRevealed(_ element: XCUIElement, file: StaticString = #filePath, line: UInt = #line) {
         XCTAssertTrue(reveal(element), "Element fehlt: \(element)", file: file, line: line)
         element.tap()
