@@ -169,7 +169,7 @@ for design in designs {
 
 // MARK: Übersicht aller Entwürfe neben dem aktuellen Icon
 
-let overview = Canvas(2400, 140 + designs.count * 330 + 330, background: gray(0.94))
+let overview = Canvas(2400, 170 + designs.count * 330, background: gray(0.94))
 overview.text("Eingelaufen · Icon-Entwürfe", 60, 36, size: 56, bold: true)
 for (x, label) in [(520, "Hell"), (880, "Dunkel"), (1240, "Getönt"), (1600, "iOS 26 hell"), (2030, "29 pt · 20 pt")] {
     overview.text(label, 0, 112, size: 30, color: gray(0.3), center: x + 140)
@@ -186,20 +186,5 @@ for (row, design) in designs.enumerated() {
     overview.image(render(design, "Default", 29), 2060, y + 112, 87)
     overview.image(render(design, "Dark", 29), 2160, y + 112, 87)
     overview.image(render(design, "Default", 20), 2262, y + 126, 60)
-}
-let currentRow = 170 + designs.count * 330
-overview.fill(40, currentRow, 2320, 290, gray(0.88), radius: 40)
-overview.text("Zum Vergleich: aktuell", 80, currentRow + 120, size: 42, bold: true)
-let current = root.appending(path: "../../App/Resources/Assets.xcassets/AppIcon.appiconset/AppIcon.png").standardized
-if let image = NSImage(contentsOf: current) {
-    for (x, size) in [(525, 270), (905, 87), (1030, 60)] {
-        let y = currentRow + 10 + (270 - size) / 2
-        NSGraphicsContext.saveGraphicsState()
-        NSBezierPath(roundedRect: NSRect(x: x, y: overview.height - y - size, width: size, height: size),
-                     xRadius: CGFloat(size) * 0.225, yRadius: CGFloat(size) * 0.225).addClip()
-        overview.image(image, x, y, size)
-        NSGraphicsContext.restoreGraphicsState()
-    }
-    overview.text("nur eine Darstellung, kein Dunkel/Getönt", 1180, currentRow + 126, size: 30, color: gray(0.25))
 }
 overview.save(root.appending(path: "uebersicht.png"))

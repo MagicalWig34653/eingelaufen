@@ -1,7 +1,7 @@
 # App-Icon: Entwürfe
 
-Stand 25.11.2026. **Noch nichts übernommen:** Die App nutzt weiter `App/Resources/Assets.xcassets/AppIcon`.
-Übersicht aller Entwürfe neben dem aktuellen Icon: [`uebersicht.png`](uebersicht.png).
+Stand 26.11.2026. **A „Profil“ ist das App-Icon** (Linos Wahl vom 25.11.): `App/Resources/AppIcon.icon`.
+Übersicht aller Entwürfe: [`uebersicht.png`](uebersicht.png) (Stand der Auswahl, unten das damalige Icon).
 
 | Ordner | Idee | Stärke | Schwäche (aus den Kleingrößen) |
 |---|---|---|---|
@@ -29,7 +29,9 @@ Türkis der App und ist bis 29 pt klar. Wer maximale Lesbarkeit in klein will, n
 - `python3 design/icon/pruefe.py` prüft: mindestens vier Entwürfe, saubere SVG-Ebenen, `actool` übersetzt jedes `.icon`,
   `ictool` rendert alle Darstellungen und Größen, Mindestkontrast bei 20 pt, Entwürfe unterscheiden sich, Tafeln vorhanden.
 
-## Übernahme (erst nach Linos Wahl)
-`<Name>.icon` als `App/Resources/AppIcon.icon` ins Projekt, `AppIcon.appiconset` entfernen, `ASSETCATALOG_COMPILER_APPICON_NAME`
-bleibt `AppIcon`; danach Build, `actool`-Ausgabe und Homescreen im Simulator prüfen. Das Deployment Target ist iOS 26, ein
-Ersatzbild für ältere Systeme ist nicht nötig. `scripts/make-icon.swift` entfällt dann.
+## Übernahme (26.11.2026)
+- `App/Resources/AppIcon.icon` ist eine unveränderte Kopie von `1-profil/Profil.icon`; `pruefe.py` wird rot, wenn beide
+  auseinanderlaufen. Änderungen also in `build.py`, dann neu erzeugen und kopieren.
+- `ASSETCATALOG_COMPILER_APPICON_NAME` bleibt `AppIcon`; `AppIcon.appiconset` und `scripts/make-icon.swift` sind entfernt.
+  Das Deployment Target ist iOS 26, ein Ersatzbild für ältere Systeme ist nicht nötig.
+- Prüfbilder aus dem Simulator (Homescreen hell und dunkel, Kleingrößen): `../../docs/screenshots/icon/`.

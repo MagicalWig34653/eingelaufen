@@ -17,6 +17,9 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
 XCODE = Path(subprocess.check_output(["xcode-select", "-p"], text=True).strip()).parent
+# Von Lino gewählt (25.11.2026): A „Profil“. Die App nutzt eine unveränderte Kopie dieses Entwurfs.
+CHOSEN = ROOT / "1-profil" / "Profil.icon"
+RESOURCES = ROOT.parents[1] / "App" / "Resources"
 ICTOOL = XCODE / "Applications/Icon Composer.app/Contents/Executables/ictool"
 APPEARANCES = ["Default", "Dark", "TintedLight", "TintedDark", "ClearLight", "ClearDark"]
 # Punktgrößen bei @3x: Homescreen 60, Spotlight 40, Einstellungen 29, Mitteilung 20.
@@ -129,6 +132,18 @@ def check_compiler(design, icon, work):
           f"{design.name}: actool lehnt das Icon ab: {(result.stdout + result.stderr)[:400]}")
 
 
+def files(icon):
+    return {str(p.relative_to(icon)): p.read_bytes() for p in icon.rglob("*") if p.is_file() and p.name != ".DS_Store"}
+
+
+def check_app_icon():
+    adopted = RESOURCES / "AppIcon.icon"
+    check(adopted.is_dir() and files(adopted) == files(CHOSEN),
+          "App/Resources/AppIcon.icon entspricht nicht dem gewählten Entwurf 1-profil")
+    check(not (RESOURCES / "Assets.xcassets" / "AppIcon.appiconset").exists(),
+          "altes AppIcon.appiconset liegt noch im Projekt")
+
+
 def main():
     designs = sorted(p for p in ROOT.glob("[1-9]-*") if p.is_dir())
     check(len(designs) >= 4, f"nur {len(designs)} Entwürfe (mindestens 4)")
@@ -174,6 +189,7 @@ def main():
             difference = sum(abs(i - j) for i, j in zip(x[:n], y[:n])) / n
             check(difference >= 0.08, f"{a} und {b} sehen sich zu ähnlich ({difference:.2f})")
     check((ROOT / "uebersicht.png").is_file(), "uebersicht.png fehlt")
+    check_app_icon()
     for message in errors:
         print("ROT:", message)
     print(f"{len(designs)} Entwürfe, {len(errors)} Fehler → {'ROT' if errors else 'GRÜN'}")
