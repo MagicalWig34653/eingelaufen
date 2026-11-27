@@ -216,6 +216,7 @@ public enum BackupValidator {
 public struct BackupConflict: Hashable, Sendable {
     public var entity: BackupEntity
     public var id: UUID
+    public init(entity: BackupEntity, id: UUID) { self.entity = entity; self.id = id }
 }
 
 public struct BackupPreview: Equatable, Sendable {

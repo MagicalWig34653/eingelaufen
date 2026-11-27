@@ -79,6 +79,10 @@ enum GearCommand: Sendable {
     // M6: Benachrichtigungen
     /// Stufe und Ruhezeiten (SPEC 7.2).
     case setNotificationPreferences(NotificationPreferences)
+    // M8: Löschen (SPEC 11)
+    case deleteGear(UUID)
+    case deleteActivity(UUID)
+    case deleteAllData
 }
 
 /// Wartungseingabe (SPEC S07): Datum = jetzt, wenn `performedAt == nil`; alles Weitere optional.
@@ -260,6 +264,7 @@ actor PersistenceActor {
         case .setAssignmentRuleEnabled(let id, let enabled): try setRuleEnabled(id, enabled, now: now)
         case .removeAssignmentRule(let id): try removeAssignmentRule(id, now: now)
         case .setNotificationPreferences(let prefs): try setNotificationPreferences(prefs, now: now)
+        case .deleteGear, .deleteActivity, .deleteAllData: CommandOutcome()
         }
     }
 
