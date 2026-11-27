@@ -27,6 +27,8 @@ public enum InboxNoOp: Hashable, Sendable {
     case staleRevision
     case invalidTransition
     case emptySelection
+    /// Auswahl enthält einen Gegenstand, den es nicht gibt (M4).
+    case unknownGear
 }
 
 public enum InboxResult: Hashable, Sendable {
