@@ -32,8 +32,12 @@ public struct BackupMedia: Codable, Hashable, Sendable {
     public init(path: String, data: Data) { self.path = path; self.data = data }
 }
 
+/// Fotos landen beim Import unter Application Support/Media: nur einfache relative Pfade, nie aus dem Ordner heraus.
 public enum BackupMediaPath {
-    public static func isSafe(_ path: String) -> Bool { true }
+    public static func isSafe(_ path: String) -> Bool {
+        guard !path.isEmpty, !path.hasPrefix("/"), !path.contains("\\"), !path.contains("\0") else { return false }
+        return path.split(separator: "/", omittingEmptySubsequences: false).allSatisfy { !$0.isEmpty && $0 != "." && $0 != ".." }
+    }
 }
 
 public enum BackupEntity: String, Codable, Sendable, CaseIterable {
@@ -57,10 +61,13 @@ public enum BackupIssue: Hashable, Sendable {
     case missingMedia(gearID: UUID, path: String)
     case unreferencedMedia(String)
 
-    /// Warnungen blockieren den Import nicht (z. B. Montage vor Kaufdatum, I-03).
+    /// Warnungen blockieren den Import nicht (z. B. Montage vor Kaufdatum, I-03; Export ohne Fotos).
     public var isWarning: Bool {
-        if case let .installation(issue) = self { return issue.isWarning }
-        return false
+        switch self {
+        case let .installation(issue): issue.isWarning
+        case .missingMedia, .unreferencedMedia: true
+        default: false
+        }
     }
 }
 
@@ -108,6 +115,27 @@ public enum BackupValidator {
             issues.append(.unsupportedSchemaVersion(document.appSchemaVersion))
         }
         issues += validate(document.data)
+        issues += validateMedia(document)
+        return issues
+    }
+
+    private static func validateMedia(_ document: BackupDocument) -> [BackupIssue] {
+        var issues: [BackupIssue] = []
+        var files = Set<String>()
+        for m in document.media ?? [] {
+            if !BackupMediaPath.isSafe(m.path) { issues.append(.invalidMediaPath(m.path)) }
+            if !files.insert(m.path).inserted { issues.append(.duplicateMediaPath(m.path)) }
+        }
+        var referenced = Set<String>()
+        for g in document.data.gear {
+            guard let path = g.photoPath else { continue }
+            referenced.insert(path)
+            if !BackupMediaPath.isSafe(path) { issues.append(.invalidMediaPath(path)) }
+            else if !files.contains(path) { issues.append(.missingMedia(gearID: g.id, path: path)) }
+        }
+        for path in files.subtracting(referenced).sorted() where BackupMediaPath.isSafe(path) {
+            issues.append(.unreferencedMedia(path))
+        }
         return issues
     }
 
@@ -196,15 +224,16 @@ public struct BackupPreview: Equatable, Sendable {
     public var conflicts: [BackupConflict]
     /// Fehler und Warnungen des Backups.
     public var issues: [BackupIssue]
-    public var summary: [BackupEntity: BackupEntityChange] = [:]
-    public var hasConflicts: Bool { false }
+    /// Je Typ: neu, unverändert, Konflikt (nur Typen mit Einträgen im Backup).
+    public var summary: [BackupEntity: BackupEntityChange]
+    public var hasConflicts: Bool { !conflicts.isEmpty }
 }
 
 public struct BackupEntityChange: Equatable, Sendable {
     public var new: Int
     public var unchanged: Int
     public var conflicting: Int
-    public var total: Int { 0 }
+    public var total: Int { new + unchanged + conflicting }
     public init(new: Int, unchanged: Int, conflicting: Int) { self.new = new; self.unchanged = unchanged; self.conflicting = conflicting }
 }
 
@@ -229,9 +258,23 @@ public enum BackupRestore {
         ]
         counts = counts.filter { $0.value > 0 }
         var conflicts: [BackupConflict] = []
+        var summary: [BackupEntity: BackupEntityChange] = [:]
         func compare<T: Identifiable & Equatable>(_ entity: BackupEntity, _ mine: [T], _ backup: [T]) where T.ID == UUID {
             let local = Dictionary(mine.map { ($0.id, $0) }, uniquingKeysWith: { a, _ in a })
-            for item in backup { if let other = local[item.id], other != item { conflicts.append(BackupConflict(entity: entity, id: item.id)) } }
+            var change = BackupEntityChange(new: 0, unchanged: 0, conflicting: 0)
+            for item in backup {
+                if let other = local[item.id] {
+                    if other != item {
+                        conflicts.append(BackupConflict(entity: entity, id: item.id))
+                        change.conflicting += 1
+                    } else {
+                        change.unchanged += 1
+                    }
+                } else {
+                    change.new += 1
+                }
+            }
+            if change.total > 0 { summary[entity] = change }
         }
         let e = existing
         compare(.gear, e.gear, b.gear); compare(.statusChange, e.statusChanges, b.statusChanges)
@@ -241,7 +284,7 @@ public enum BackupRestore {
         compare(.maintenanceEvent, e.maintenanceEvents, b.maintenanceEvents)
         compare(.maintenanceRule, e.maintenanceRules, b.maintenanceRules)
         compare(.assignmentRule, e.assignmentRules, b.assignmentRules); compare(.pending, e.pendings, b.pendings)
-        return BackupPreview(counts: counts, conflicts: conflicts, issues: BackupValidator.validate(document))
+        return BackupPreview(counts: counts, conflicts: conflicts, issues: BackupValidator.validate(document), summary: summary)
     }
 
     /// Liefert den neuen Bestand oder wirft; bei einem Fehler bleibt der vorhandene Bestand unverändert.
@@ -262,7 +305,12 @@ public enum BackupRestore {
         return result
     }
 
-    public static func media(of document: BackupDocument, for result: GearDataset) -> [BackupMedia] { [] }
+    /// Die Fotos, die nach dem Wiederherstellen zu schreiben sind: nur sichere Pfade, die das Ergebnis auch nutzt.
+    public static func media(of document: BackupDocument, for result: GearDataset) -> [BackupMedia] {
+        let used = Set(result.gear.compactMap(\.photoPath))
+        var seen = Set<String>()
+        return (document.media ?? []).filter { used.contains($0.path) && BackupMediaPath.isSafe($0.path) && seen.insert($0.path).inserted }
+    }
 
     private static func merged(_ e: GearDataset, _ b: GearDataset, prefer: MergePreference) -> GearDataset {
         func union<T: Identifiable>(_ mine: [T], _ backup: [T]) -> [T] where T.ID == UUID {
