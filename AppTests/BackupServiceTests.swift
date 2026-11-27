@@ -132,4 +132,67 @@ import Testing
         #expect(service.media.read("gear/rad.jpg") == nil)
         #expect(try await service.persistence.outbox(pendingOnly: true).map(\.kind) == [.dataReplaced])
     }
+
+    // MARK: Zusammenspiel mit dem Health-Import
+
+    private func workout(_ sourceID: String) -> WorkoutChanges {
+        let w = IncomingWorkout(sourceID: sourceID, sportType: SportType(rawValue: 37), startAt: day(1),
+                                endAt: day(1).addingTimeInterval(3_600), distanceMeters: 10_000, durationSeconds: 3_600)
+        return WorkoutChanges(batch: ImportBatch(upserts: [w]), anchor: Data(sourceID.utf8))
+    }
+
+    private func imported() async throws -> BackupService {
+        let service = BackupService(persistence: try makePersistence(), media: tempMedia())
+        _ = try await service.persistence.apply(.connectHealth(.all), now: t0)
+        _ = try await service.persistence.commitImport(workout("W1"), since: nil, now: day(2))
+        return service
+    }
+
+    @Test("Gelöschtes Health-Training bleibt auch nach Zeitraumwechsel und erneutem Import gelöscht")
+    func deletedWorkoutStaysDeleted() async throws {
+        let service = try await imported()
+        let activity = try #require(try await service.persistence.dataset().activities.first)
+        _ = try await service.persistence.apply(.deleteActivity(activity.id), now: day(3))
+        _ = try await service.persistence.apply(.connectHealth(.days90), now: day(4))
+        let since = try await service.persistence.importState().since
+        _ = try await service.persistence.commitImport(workout("W1"), since: since, now: day(5))
+        let after = try await service.persistence.dataset()
+        #expect(after.activities.count == 1 && after.activities[0].deletedAt == day(3))
+        #expect(try await service.persistence.ledger().isEmpty && after.pendings.allSatisfy { $0.state == .obsolete })
+    }
+
+    @Test("Wiederherstellen setzt den Health-Anker zurück: der nächste Abgleich holt fehlende Trainings nach")
+    func restoreResetsAnchor() async throws {
+        let service = try await imported()
+        #expect(try await service.persistence.importState().anchor != nil)
+        try await service.restore(BackupDocument(exportedAt: day(3), data: GearDataset()), mode: .replace, now: day(3))
+        #expect(try await service.persistence.importState().anchor == nil)
+        #expect(try await service.persistence.importState().isEnabled)
+    }
+
+    @Test("Ein Import, der während „Alle Daten löschen“ lief, schreibt nichts in den leeren Bestand")
+    func lateImportAfterDeleteAllIsIgnored() async throws {
+        let service = try await imported()
+        try await service.deleteAllData(now: day(3))
+        _ = try await service.persistence.commitImport(workout("W2"), since: nil, now: day(4))
+        #expect(try await service.persistence.dataset() == GearDataset())
+        #expect(try await service.persistence.importState().anchor == nil)
+    }
+
+    @Test("Zusammenführen mit Vorrang Bestand überschreibt kein lokales Foto mit gleichem Pfad")
+    func mergeKeepsLocalPhoto() async throws {
+        let (source, d) = try await seeded()
+        let bytes = try await source.export(includePhotos: true, now: day(10))
+        let local = try makePersistence()
+        try await local.load(d, now: t0)
+        let target = BackupService(persistence: local, media: tempMedia())
+        let mine = Data([9, 9, 9])
+        try target.media.write(BackupMedia(path: "gear/rad.jpg", data: mine))
+        let candidate = try await target.preview(bytes)
+        try await target.restore(candidate.document, mode: .merge(prefer: .existing), now: day(11))
+        #expect(target.media.read("gear/rad.jpg") == mine)
+        try await target.restore(candidate.document, mode: .merge(prefer: .backup), now: day(12))
+        #expect(target.media.read("gear/rad.jpg") == photo)
+    }
 }
+

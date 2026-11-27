@@ -189,4 +189,20 @@ struct DataDeletionTests {
         #expect(throws: DeletionError.activityNotFound(id(401))) { try DataDeletion.deleteActivity(id(401), in: d, now: day(51)) }
         #expect(throws: DeletionError.activityNotFound(id(99))) { try DataDeletion.deleteActivity(id(99), in: d, now: day(51)) }
     }
+
+    @Test("Vom Nutzer gelöschtes Training bleibt gelöscht, auch wenn die Quelle es erneut liefert (Neuabgleich, geänderte Werte)")
+    func userDeletionSurvivesReimport() throws {
+        let deleted = try DataDeletion.deleteActivity(id(401), in: richDataset(), now: day(50))
+        #expect(deleted.activities.first { $0.id == id(401) }?.removedByUser == true)
+        for distance in [nil, 12_000.0] {
+            let again = IncomingWorkout(sourceID: "HK-2", sportType: cycling, startAt: day(25), endAt: day(25, hour: 1),
+                                        distanceMeters: distance, durationSeconds: 3_600)
+            let out = ImportReconciler.reconcile(deleted, ImportBatch(upserts: [again]), now: day(51))
+            #expect(out.dataset == deleted && out.isUnchanged)
+            #expect(!LedgerBuilder.build(out.dataset.ledgerInput).entries.contains { $0.activityID == id(401) })
+        }
+        // Auch nach Backup und Wiederherstellen bleibt die Entscheidung erhalten.
+        let doc = try BackupCodec.decode(BackupCodec.encode(BackupDocument(exportedAt: day(52), data: deleted)))
+        #expect(doc.data.activities.first { $0.id == id(401) }?.removedByUser == true)
+    }
 }

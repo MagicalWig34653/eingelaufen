@@ -88,12 +88,15 @@ public struct ActivityRecord: Identifiable, Hashable, Codable, Sendable {
     /// Herkunft bei importierten Trainings; manuell `nil`.
     public var sourceBundleID: String?
     public var sourceName: String?
+    /// `true`: vom Nutzer in der App gelöscht (M8). Anders als eine Löschung durch die Quelle hebt sie kein späterer
+    /// Import auf. `nil` sonst (fehlt dann im Backup).
+    public var removedByUser: Bool?
 
     public init(id: UUID = UUID(), source: ActivitySource = .manual, sourceID: String? = nil,
                 sportType: SportType, startAt: Date, endAt: Date,
                 distanceMeters: Double? = nil, durationSeconds: Double,
                 deletedAt: Date? = nil, isIndoor: Bool? = nil, revision: Int = 1,
-                sourceBundleID: String? = nil, sourceName: String? = nil) {
+                sourceBundleID: String? = nil, sourceName: String? = nil, removedByUser: Bool? = nil) {
         self.id = id
         self.source = source
         self.sourceID = sourceID
@@ -107,6 +110,7 @@ public struct ActivityRecord: Identifiable, Hashable, Codable, Sendable {
         self.revision = revision
         self.sourceBundleID = sourceBundleID
         self.sourceName = sourceName
+        self.removedByUser = removedByUser
     }
 }
 
