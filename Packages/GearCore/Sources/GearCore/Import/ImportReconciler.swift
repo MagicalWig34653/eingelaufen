@@ -175,6 +175,8 @@ public enum ImportReconciler {
             var revived: [ActivityRecord] = []
             for w in incoming {
                 guard let i = index(ofSource: w.sourceID) else { fresh.append(w); continue }
+                // Vom Nutzer gelöscht (M8): die Quelle darf ihn weder ändern noch wiederbeleben.
+                if dataset.activities[i].removedByUser == true { continue }
                 if let record = update(at: i, with: w) {
                     if record.deletedAt == nil, wasTombstoned(record.id) { revived.append(record) }
                 }

@@ -1554,6 +1554,586 @@
           }
         }
       }
+    },
+    "Löschen": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Löschen"
+          }
+        }
+      }
+    },
+    "„%@“ löschen?": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "„%@“ löschen?"
+          }
+        }
+      }
+    },
+    "Endgültig löschen": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Endgültig löschen"
+          }
+        }
+      }
+    },
+    "Abbrechen": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Abbrechen"
+          }
+        }
+      }
+    },
+    "Die Ausrüstung wird mit Montagen, Wartungen und Zuordnungen endgültig gelöscht. Die Aktivitäten bleiben erhalten. Willst du sie nur ausblenden, archiviere sie.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Die Ausrüstung wird mit Montagen, Wartungen und Zuordnungen endgültig gelöscht. Die Aktivitäten bleiben erhalten. Willst du sie nur ausblenden, archiviere sie."
+          }
+        }
+      }
+    },
+    "Aktivität löschen": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aktivität löschen"
+          }
+        }
+      }
+    },
+    "Aktivität löschen?": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aktivität löschen?"
+          }
+        }
+      }
+    },
+    "Die Aktivität zählt nicht mehr für deine Ausrüstung. In Apple Health bleibt sie erhalten.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Die Aktivität zählt nicht mehr für deine Ausrüstung. In Apple Health bleibt sie erhalten."
+          }
+        }
+      }
+    },
+    "Die Aktivität wird endgültig gelöscht und zählt nicht mehr für deine Ausrüstung.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Die Aktivität wird endgültig gelöscht und zählt nicht mehr für deine Ausrüstung."
+          }
+        }
+      }
+    },
+    "Daten": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Daten"
+          }
+        }
+      }
+    },
+    "Fotos einschließen": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fotos einschließen"
+          }
+        }
+      }
+    },
+    "Backup exportieren": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Backup exportieren"
+          }
+        }
+      }
+    },
+    "Backup exportieren?": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Backup exportieren?"
+          }
+        }
+      }
+    },
+    "Exportieren": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Exportieren"
+          }
+        }
+      }
+    },
+    "Die Datei ist nicht verschlüsselt und enthält deine Ausrüstung und Trainingsdaten. Bewahre sie sicher auf und teile sie nur mit Bedacht.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Die Datei ist nicht verschlüsselt und enthält deine Ausrüstung und Trainingsdaten. Bewahre sie sicher auf und teile sie nur mit Bedacht."
+          }
+        }
+      }
+    },
+    "Backup importieren": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Backup importieren"
+          }
+        }
+      }
+    },
+    "Alle App-Daten löschen": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Alle App-Daten löschen"
+          }
+        }
+      }
+    },
+    "Alle App-Daten löschen?": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Alle App-Daten löschen?"
+          }
+        }
+      }
+    },
+    "Alles löschen": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Alles löschen"
+          }
+        }
+      }
+    },
+    "Ausrüstung, Aktivitäten, Wartungen, Regeln, Fotos und Einstellungen werden endgültig von diesem Gerät gelöscht. In Apple Health bleibt alles erhalten. Exportiere vorher ein Backup, wenn du die Daten behalten willst.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ausrüstung, Aktivitäten, Wartungen, Regeln, Fotos und Einstellungen werden endgültig von diesem Gerät gelöscht. In Apple Health bleibt alles erhalten. Exportiere vorher ein Backup, wenn du die Daten behalten willst."
+          }
+        }
+      }
+    },
+    "Ein Backup ist eine unverschlüsselte Datei mit allen Daten der App. Du kannst es auf einem anderen Gerät wiederherstellen.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ein Backup ist eine unverschlüsselte Datei mit allen Daten der App. Du kannst es auf einem anderen Gerät wiederherstellen."
+          }
+        }
+      }
+    },
+    "Erstellt am": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Erstellt am"
+          }
+        }
+      }
+    },
+    "Inhalt": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Inhalt"
+          }
+        }
+      }
+    },
+    "Nicht übernehmbar": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nicht übernehmbar"
+          }
+        }
+      }
+    },
+    "Das Backup enthält widersprüchliche Daten (%lld). Dein Bestand bleibt unverändert.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Das Backup enthält widersprüchliche Daten (%lld). Dein Bestand bleibt unverändert."
+          }
+        }
+      }
+    },
+    "Hinweise": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hinweise"
+          }
+        }
+      }
+    },
+    "Übernehmen": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Übernehmen"
+          }
+        }
+      }
+    },
+    "Bestand ersetzen": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bestand ersetzen"
+          }
+        }
+      }
+    },
+    "Zusammenführen, Backup gewinnt": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zusammenführen, Backup gewinnt"
+          }
+        }
+      }
+    },
+    "Zusammenführen, Bestand gewinnt": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zusammenführen, Bestand gewinnt"
+          }
+        }
+      }
+    },
+    "Wiederherstellen": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wiederherstellen"
+          }
+        }
+      }
+    },
+    "Ersetzen löscht deinen aktuellen Bestand und übernimmt genau das Backup.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ersetzen löscht deinen aktuellen Bestand und übernimmt genau das Backup."
+          }
+        }
+      }
+    },
+    "Zusammenführen ergänzt neue Einträge; bei gleichen Einträgen entscheidet die gewählte Seite.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zusammenführen ergänzt neue Einträge; bei gleichen Einträgen entscheidet die gewählte Seite."
+          }
+        }
+      }
+    },
+    "Ausrüstung": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ausrüstung"
+          }
+        }
+      }
+    },
+    "Statuswechsel": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Statuswechsel"
+          }
+        }
+      }
+    },
+    "Montagen": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Montagen"
+          }
+        }
+      }
+    },
+    "Sets": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sets"
+          }
+        }
+      }
+    },
+    "Sportarten": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sportarten"
+          }
+        }
+      }
+    },
+    "Aktivitäten": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aktivitäten"
+          }
+        }
+      }
+    },
+    "Abschnitte": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Abschnitte"
+          }
+        }
+      }
+    },
+    "Zuordnungen": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zuordnungen"
+          }
+        }
+      }
+    },
+    "Wartungen": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wartungen"
+          }
+        }
+      }
+    },
+    "Wartungsregeln": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wartungsregeln"
+          }
+        }
+      }
+    },
+    "Zuordnungsregeln": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zuordnungsregeln"
+          }
+        }
+      }
+    },
+    "Posteingang": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Posteingang"
+          }
+        }
+      }
+    },
+    "%lld neu": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld neu"
+          }
+        }
+      }
+    },
+    "%lld unverändert": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld unverändert"
+          }
+        }
+      }
+    },
+    "%lld abweichend": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld abweichend"
+          }
+        }
+      }
+    },
+    "Fotos sind in diesem Backup nicht enthalten.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fotos sind in diesem Backup nicht enthalten."
+          }
+        }
+      }
+    },
+    "Fotos ohne zugehörige Ausrüstung werden übersprungen.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fotos ohne zugehörige Ausrüstung werden übersprungen."
+          }
+        }
+      }
+    },
+    "Eine Montage liegt vor dem Kaufdatum.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Eine Montage liegt vor dem Kaufdatum."
+          }
+        }
+      }
+    },
+    "Diese Datei ist kein Eingelaufen-Backup oder sie ist beschädigt.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Diese Datei ist kein Eingelaufen-Backup oder sie ist beschädigt."
+          }
+        }
+      }
+    },
+    "Dieses Backup stammt aus einer neueren Version von Eingelaufen. Bitte aktualisiere die App.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dieses Backup stammt aus einer neueren Version von Eingelaufen. Bitte aktualisiere die App."
+          }
+        }
+      }
+    },
+    "Das Backup enthält widersprüchliche Daten und wurde nicht übernommen. Dein Bestand ist unverändert.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Das Backup enthält widersprüchliche Daten und wurde nicht übernommen. Dein Bestand ist unverändert."
+          }
+        }
+      }
+    },
+    "Vorschau": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vorschau"
+          }
+        }
+      }
+    },
+    "Importieren": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Importieren"
+          }
+        }
+      }
+    },
+    "1 Eintrag weicht von deinem Bestand ab.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "1 Eintrag weicht von deinem Bestand ab."
+          }
+        }
+      }
+    },
+    "%lld Einträge weichen von deinem Bestand ab.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld Einträge weichen von deinem Bestand ab."
+          }
+        }
+      }
     }
   },
   "version": "1.0"

@@ -118,3 +118,42 @@ extension XCUIElement {
         coordinate(withNormalizedOffset: CGVector(dx: 0.93, dy: 0.5)).tap()
     }
 }
+
+extension XCTestCase {
+    // MARK: Systemdialoge (Dateien)
+
+    /// Sichern-Dialog von `fileExporter`: Ort „Auf meinem iPhone“ und „Sichern“.
+    @MainActor
+    func saveInFilesPicker(_ app: XCUIApplication) {
+        let save = app.buttons.matching(NSPredicate(format: "label IN %@", ["Sichern", "Save", "Bewegen", "Move"])).firstMatch
+        XCTAssertTrue(save.waitForExistence(timeout: 15), "Sichern-Dialog fehlt")
+        let onDevice = app.descendants(matching: .any).matching(NSPredicate(format: "label IN %@", ["Auf meinem iPhone", "On My iPhone"])).firstMatch
+        if onDevice.waitForExistence(timeout: 3), onDevice.isHittable { onDevice.tap() }
+        save.tap()
+        // Der Dateiname trägt die Uhrzeit, ein „Ersetzen“ (läuft außerhalb der App) sollte nie kommen.
+        let replace = app.alerts.buttons.matching(NSPredicate(format: "label IN %@", ["Ersetzen", "Replace"])).firstMatch
+        let deadline = Date().addingTimeInterval(20)
+        while Date() < deadline {
+            if replace.exists { replace.tap() }
+            if !save.exists && !replace.exists { return }
+            Thread.sleep(forTimeInterval: 1)
+        }
+        XCTFail("Sichern-Dialog schließt nicht")
+    }
+
+    /// Öffnen-Dialog von `fileImporter`: die zuletzt gesicherte Backup-Datei wählen.
+    @MainActor
+    func openFromFilesPicker(_ app: XCUIApplication) {
+        let file = app.descendants(matching: .any).matching(NSPredicate(format: "label BEGINSWITH %@", "Eingelaufen-Backup")).firstMatch
+        if !file.waitForExistence(timeout: 10) {
+            let browse = app.buttons.matching(NSPredicate(format: "label IN %@", ["Durchsuchen", "Browse"])).firstMatch
+            if browse.exists { browse.tap() }
+            let onDevice = app.descendants(matching: .any).matching(NSPredicate(format: "label IN %@", ["Auf meinem iPhone", "On My iPhone"])).firstMatch
+            if onDevice.waitForExistence(timeout: 5) { onDevice.tap() }
+        }
+        XCTAssertTrue(file.waitForExistence(timeout: 10), "Backup-Datei im Öffnen-Dialog fehlt")
+        file.tap()
+        let open = app.buttons.matching(NSPredicate(format: "label IN %@", ["Öffnen", "Open"])).firstMatch
+        if open.waitForExistence(timeout: 2) { open.tap() }
+    }
+}

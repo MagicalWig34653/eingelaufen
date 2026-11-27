@@ -499,7 +499,7 @@ typealias GearStatusChangeEntity = SchemaV1.GearStatusChangeEntity
 typealias InstallationEntity = SchemaV1.InstallationEntity
 typealias GearPresetEntity = SchemaV1.GearPresetEntity
 typealias SportProfileEntity = SchemaV1.SportProfileEntity
-typealias ActivityEntity = SchemaV1.ActivityEntity
+typealias ActivityEntity = SchemaV2.ActivityEntity
 typealias ActivitySegmentEntity = SchemaV1.ActivitySegmentEntity
 typealias AssignmentEntity = SchemaV1.AssignmentEntity
 typealias MaintenanceEventEntity = SchemaV1.MaintenanceEventEntity
@@ -515,7 +515,7 @@ typealias OutboxEntity = SchemaV1.OutboxEntity
 
 enum GearMigrationPlan: SchemaMigrationPlan {
     static var schemas: [any VersionedSchema.Type] { [SchemaV1.self, SchemaV2.self] }
-    /// V1 → V2 (M6): Einstellungen für Benachrichtigungen, nur neue Attribute mit Vorgabe (leichtgewichtig).
+    /// V1 → V2 (M6, M8): Einstellungen für Benachrichtigungen, `ActivityEntity.removedByUser`; nur neue Attribute (leichtgewichtig).
     /// Die Testmigration V1 → V1_1 liegt im Testziel (SPEC 14.2).
     static var stages: [MigrationStage] { [.lightweight(fromVersion: SchemaV1.self, toVersion: SchemaV2.self)] }
 }

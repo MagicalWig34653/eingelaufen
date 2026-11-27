@@ -147,7 +147,7 @@ Algorithmus je Aktivität `a` (bzw. Segment `s`) mit Zeitpunkt `t = startAt`:
 ### 5.4 Löschungen und fehlende Berechtigung
 - Gelöscht wird **nur** auf Grund eines `HKDeletedObject` (oder Nutzeraktion). Ein leeres Abfrageergebnis bedeutet nicht „gelöscht“ und nicht „Zugriff verweigert“ (Spec 6.1 Punkt 7, 11).
 - Der optionale Voll-Abgleich (Einstellungen > Neu synchronisieren) markiert nicht mehr auffindbare Workouts nur als `missingInSourceSince` und zeigt sie zur Prüfung; keine automatische Löschung, keine Diagnose „Zugriff verweigert“.
-- Löschen einer Aktivität entfernt Ledger-Beiträge, nie das Ausrüstungsobjekt (Spec 11).
+- Löschen einer Aktivität entfernt Ledger-Beiträge, nie das Ausrüstungsobjekt (Spec 11). Vom Nutzer gelöschte Health-Aktivitäten (`removedByUser`) hebt kein späterer Import auf.
 
 ---
 
@@ -176,8 +176,8 @@ Reihenfolge exakt nach Spec 6.2; Konfidenz-Enum `explicit/high/medium/low/none`,
 ---
 
 ## 7. Datensicherung (Spec 11, T-14)
-- `BackupDocument` v1: `formatVersion`, `appSchemaVersion`, `exportedAt`, alle Wahrheits-Entitäten (nicht das Ledger, es wird nach Import neu gebaut), optional Fotos als ZIP-Paket (Format `.<app>backup` erst nach Namensentscheidung, bis dahin `.json`).
-- Import: Validierung (Version, Referenzen, Invarianten I-01…I-09) → Vorschau (Anzahl je Typ, Konflikte) → Modus „Ersetzen“ oder „Zusammenführen nach ID“ → ein Commit → `rebuildAll()`.
+- `BackupDocument` v1: `formatVersion`, `appSchemaVersion`, `exportedAt`, alle Wahrheits-Entitäten (nicht das Ledger, es wird nach Import neu gebaut), optional Fotos als `media`-Liste (relativer Pfad + Base64) in derselben `.json`-Datei; kein ZIP (M8).
+- Import: Validierung (Version, Referenzen, Invarianten I-01…I-09) → Vorschau (Anzahl je Typ, Konflikte) → Modus „Ersetzen“ oder „Zusammenführen nach ID“ → ein Commit (Ledger neu, Health-Anker verworfen) → Fotos schreiben und aufräumen.
 - Export-Hinweis „unverschlüsselt, enthält Trainingsdaten“. HealthKit-abgeleitete Daten verlassen das Gerät nur durch ausdrückliche Nutzeraktion.
 
 ---

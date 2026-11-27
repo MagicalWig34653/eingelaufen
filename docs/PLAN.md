@@ -80,7 +80,7 @@ Abhängigkeiten in Klammern. „Namensunabhängig“ heißt: kann vor E-01 start
 - Widget-Extension (nur Live Activity), `ActivityAttributes`, kompakte/erweiterte/Sperrbildschirm-Darstellung, `LiveActivityIntent`-Buttons für ≤ 2 Kandidaten, Start/Update/Ende-Controller nach Commit, Fallback-Nachweis.
 - **DoD (= Spec Phase 3):** Benachrichtigungsfreigabe optional, offene Zuordnungen gehen nie verloren, wiederholte Aktionen sicher; Integrationsliste 14.2 „Live Activity: Vordergrundstart, erlaubter Intent-Start, Ablauf, Fehlerfallback und Auflösung“ protokolliert.
 
-### M8 Datensicherung und Löschen (M4, M5)
+### M8 Datensicherung und Löschen (M4, M5) – Software umgesetzt 27.11.2026, Abnahme offen
 - Export (JSON v1, optional ZIP mit Fotos) über FileExporter/Share Sheet mit Hinweis, Import mit Validierung, Vorschau, Konfliktbehandlung; „Alle App-Daten löschen“; einzelne Aktivitäten/Ausrüstung löschen.
 - **DoD:** T-14 (Kern + App-Rundreise mit Fotos), Migrationstest SchemaV1 → Testschema grün.
 

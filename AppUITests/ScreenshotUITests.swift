@@ -182,4 +182,62 @@ final class ScreenshotUITests: XCTestCase {
         shot(springboard, "\(tag)-m6-2-mitteilung-aktionen")
         springboard.buttons["Später"].tap()
     }
+
+    /// M8: Einstellungen › Daten, Export-Hinweis, Alles löschen, Löschen im Detail und in der Aktivität, Import-Vorschau mit
+    /// abweichendem Eintrag (hell/dunkel stellt der Aufrufer ein).
+    @MainActor
+    func testDataScreens() {
+        let tag = ProcessInfo.processInfo.environment["SCREENSHOT_TAG"] ?? "light"
+        let app = launch("basic")
+        // Bestätigungsdialoge sind hier Popover ohne „Abbrechen“: ein Tipp daneben schließt sie.
+        func closeDialog() {
+            let outside = app.element(id: "PopoverDismissRegion")
+            if outside.exists { outside.tap() } else { app.coordinate(withNormalizedOffset: CGVector(dx: 0.02, dy: 0.5)).tap() }
+            XCTAssertTrue(app.sheets.firstMatch.waitForNonExistence(timeout: 5), "Dialog schließt nicht")
+        }
+        app.buttons["settingsButton"].tapWhenReady()
+        XCTAssertTrue(app.reveal(app.buttons["deleteAllData"]))
+        shot(app, "\(tag)-m8-1-einstellungen-daten")
+        app.buttons["deleteAllData"].tap()
+        XCTAssertTrue(app.sheets.firstMatch.buttons["confirmDeleteAll"].firstMatch.waitForExistence(timeout: 5))
+        shot(app, "\(tag)-m8-2-alles-loeschen")
+        closeDialog()
+        app.tapRevealed(app.buttons["exportBackup"])
+        XCTAssertTrue(app.element(labelContaining: "nicht verschlüsselt").waitForExistence(timeout: 5))
+        shot(app, "\(tag)-m8-3-export-hinweis")
+        app.sheets.firstMatch.buttons["exportConfirm"].firstMatch.tapWhenReady()
+        saveInFilesPicker(app)
+        app.buttons["settingsDone"].tapWhenReady()
+
+        // Nach dem Export lokal umbenennen: die Vorschau zeigt dann einen abweichenden Eintrag.
+        app.tabBars.buttons["Ausrüstung"].tapWhenReady()
+        app.buttons["gear.Tennisschläger"].tapWhenReady()
+        app.tapRevealed(app.buttons["detailRename"])
+        let field = app.alerts.textFields.firstMatch
+        XCTAssertTrue(field.waitForExistence(timeout: 5))
+        field.typeText(" alt")
+        app.alerts.buttons["Speichern"].tap()
+        app.tapRevealed(app.buttons["detailDelete"])
+        XCTAssertTrue(app.sheets.firstMatch.buttons["confirmDeleteGear"].firstMatch.waitForExistence(timeout: 5))
+        shot(app, "\(tag)-m8-4-ausruestung-loeschen")
+        closeDialog()
+
+        app.tabBars.buttons["Verlauf"].tapWhenReady()
+        app.buttons["activityRow.Laufschuhe Pegasus"].tapWhenReady()
+        app.tapRevealed(app.buttons["activityDelete"])
+        XCTAssertTrue(app.sheets.firstMatch.buttons["confirmDeleteActivity"].firstMatch.waitForExistence(timeout: 5))
+        shot(app, "\(tag)-m8-5-aktivitaet-loeschen")
+        closeDialog()
+        app.navigationBars.buttons.firstMatch.tap()
+
+        app.buttons["settingsButton"].tapWhenReady()
+        app.tapRevealed(app.buttons["importBackup"])
+        openFromFilesPicker(app)
+        XCTAssertTrue(app.element(id: "previewCount.gear").waitForExistence(timeout: 15))
+        XCTAssertTrue(app.element(id: "previewCount.gear").label.contains("abweichend"), app.element(id: "previewCount.gear").label)
+        shot(app, "\(tag)-m8-6-vorschau")
+        app.swipeUp()
+        app.buttons["Zusammenführen, Bestand gewinnt"].firstMatch.tap()
+        shot(app, "\(tag)-m8-7-vorschau-modus")
+    }
 }

@@ -40,7 +40,8 @@ public enum DataDeletion {
     }
 
     /// Manuelle Aktivitäten verschwinden vollständig. Importierte bleiben als Grabstein (`deletedAt`, I-08) mit
-    /// ihrer Quell-ID, damit der Import sie wiedererkennt; ihre Zuordnungen entfallen, der Posteingang wird hinfällig.
+    /// ihrer Quell-ID und `removedByUser`, damit kein späterer Import sie zurückholt; ihre Zuordnungen entfallen, der
+    /// Posteingang wird hinfällig.
     public static func deleteActivity(_ id: UUID, in dataset: GearDataset, now: Date) throws -> GearDataset {
         guard let index = dataset.activities.firstIndex(where: { $0.id == id && $0.deletedAt == nil }) else {
             throw DeletionError.activityNotFound(id)
@@ -53,6 +54,7 @@ public enum DataDeletion {
             d.pendings.removeAll { $0.activityID == id }
         } else {
             d.activities[index].deletedAt = now
+            d.activities[index].removedByUser = true
             d.activities[index].revision += 1
             for i in d.pendings.indices where d.pendings[i].activityID == id && !d.pendings[i].state.isFinal {
                 d.pendings[i].state = .obsolete

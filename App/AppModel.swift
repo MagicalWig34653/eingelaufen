@@ -17,6 +17,8 @@ final class AppModel {
     /// Ziel nach einer Benachrichtigung („Andere auswählen“, „Prüfen“, Tippen auf die Meldung); `MainTabs` navigiert.
     var notificationRoute: NotificationRoute?
     let notifications: NotificationCoordinator
+    /// M8: Datensicherung und Löschen; Fotos unter Application Support/Media.
+    let backup: BackupService
 
     private let health: HealthImporter
 
@@ -26,6 +28,7 @@ final class AppModel {
         let notifications = NotificationCoordinator(persistence: persistence, center: notificationCenter)
         self.persistence = persistence
         self.notifications = notifications
+        backup = BackupService(persistence: persistence, media: .standard)
         // Auch Importe aus dem Hintergrundweckruf planen Benachrichtigungen, aber fragen nie nach der Erlaubnis.
         health = HealthImporter(source: healthSource, store: NotifyingImportStore(base: persistence, notifications: notifications),
                                 now: { Date() })
@@ -95,6 +98,59 @@ final class AppModel {
         }
     }
 
+    // MARK: Datensicherung und Löschen (SPEC 11, M8)
+
+    /// Nach einem Commit außerhalb von `run`: Outbox zustellen, Mitteilungen abgleichen (ohne Erlaubnisfrage).
+    private func afterCommit() async {
+        _ = await OutboxDispatcher(persistence: persistence).deliver(to: NoSideEffects(), now: Date())
+        Task { await refreshNotifications(requestPermission: false) }
+    }
+
+    private func attempt(_ work: () async throws -> Void) async -> Bool {
+        do {
+            try await work()
+            await afterCommit()
+            return true
+        } catch {
+            errorMessage = Self.message(for: error)
+            return false
+        }
+    }
+
+    func deleteGear(_ id: UUID) async -> Bool { await attempt { try await backup.deleteGear(id, now: Date()) } }
+    func deleteAllData() async -> Bool { await attempt { try await backup.deleteAllData(now: Date()) } }
+    func restore(_ candidate: ImportCandidate, mode: RestoreMode) async -> Bool {
+        let done = await attempt { try await backup.restore(candidate.document, mode: mode, now: Date()) }
+        // Trainings nachholen, die dem Backup fehlen (Anker wurde verworfen); das Blatt wartet nicht darauf.
+        if done { Task { await syncHealth() } }
+        return done
+    }
+
+    func exportBackup(includePhotos: Bool) async -> Data? {
+        do { return try await backup.export(includePhotos: includePhotos, now: Date()) } catch {
+            errorMessage = Self.message(for: error)
+            return nil
+        }
+    }
+
+    /// Liest eine gewählte Datei (Sicherheitsbereich der Dateien-App) und prüft sie gegen den Bestand.
+    func previewBackup(at url: URL) async -> ImportCandidate? {
+        let scoped = url.startAccessingSecurityScopedResource()
+        defer { if scoped { url.stopAccessingSecurityScopedResource() } }
+        do { return try await backup.preview(try Data(contentsOf: url)) } catch {
+            errorMessage = Self.message(for: error)
+            return nil
+        }
+    }
+
+    static func message(for reason: BackupError) -> String {
+        switch reason {
+        case .malformed: "Diese Datei ist kein Eingelaufen-Backup oder sie ist beschädigt."
+        case .unsupportedFormatVersion, .unsupportedSchemaVersion: "Dieses Backup stammt aus einer neueren Version von Eingelaufen. Bitte aktualisiere die App."
+        case .invalid: "Das Backup enthält widersprüchliche Daten und wurde nicht übernommen. Dein Bestand ist unverändert."
+        }
+    }
+
     static func message(for reason: ComponentPlanError) -> String {
         switch reason {
         case .sameGear: "Ein Teil kann nicht in sich selbst verbaut werden."
@@ -132,7 +188,8 @@ final class AppModel {
     }
 
     static func message(for error: Error) -> String {
-        switch error as? PersistenceError {
+        if let backup = error as? BackupError { return message(for: backup) }
+        return switch error as? PersistenceError {
         case .emptyName: "Bitte gib einen Namen ein."
         case .gearNotFound: "Diese Ausrüstung gibt es nicht mehr."
         case .gearAlreadyExists, .activityAlreadyExists: "Dieser Eintrag existiert bereits."

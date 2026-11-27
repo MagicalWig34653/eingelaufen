@@ -14,6 +14,7 @@ struct GearDetailView: View {
     @State private var showRename = false
     @State private var newName = ""
     @State private var confirmArchive = false
+    @State private var confirmDelete = false
     @State private var showAddActivity = false
     @State private var componentSheet: ComponentSheet?
     @State private var maintenanceForm: MaintenanceFormKind?
@@ -98,6 +99,17 @@ struct GearDetailView: View {
                 Button("Umbenennen", systemImage: "pencil") { newName = gear.name; showRename = true }
                     .accessibilityIdentifier("detailRename")
                 statusActions(gear, status)
+                Button("Löschen", systemImage: "trash", role: .destructive) { confirmDelete = true }
+                    .accessibilityIdentifier("detailDelete")
+                    .confirmationDialog("„\(gear.name)“ löschen?", isPresented: $confirmDelete, titleVisibility: .visible) {
+                        Button("Endgültig löschen", role: .destructive) {
+                            Task { if await model.deleteGear(gearID) { dismiss() } }
+                        }
+                        .accessibilityIdentifier("confirmDeleteGear")
+                        Button("Abbrechen", role: .cancel) {}
+                    } message: {
+                        Text("Die Ausrüstung wird mit Montagen, Wartungen und Zuordnungen endgültig gelöscht. Die Aktivitäten bleiben erhalten. Willst du sie nur ausblenden, archiviere sie.")
+                    }
             }
             if !history.isEmpty {
                 Section("Verlauf") {

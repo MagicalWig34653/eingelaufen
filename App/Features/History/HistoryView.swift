@@ -104,6 +104,8 @@ struct ActivityDetailView: View {
     @Query private var pendings: [PendingEntity]
     @Query private var gear: [GearEntity]
     @State private var showChange = false
+    @State private var confirmDelete = false
+    @Environment(\.dismiss) private var dismiss
 
     init(activityID: UUID) {
         self.activityID = activityID
@@ -138,6 +140,21 @@ struct ActivityDetailView: View {
                         Text("Ausrüstung")
                     } footer: {
                         Text("Eine Änderung gilt rückwirkend: die Nutzung des alten Teils sinkt, die des neuen steigt.")
+                    }
+                    Section {
+                        Button("Aktivität löschen", systemImage: "trash", role: .destructive) { confirmDelete = true }
+                            .accessibilityIdentifier("activityDelete")
+                            .confirmationDialog("Aktivität löschen?", isPresented: $confirmDelete, titleVisibility: .visible) {
+                                Button("Löschen", role: .destructive) {
+                                    Task { if await model.run(.deleteActivity(activity.id)) != nil { dismiss() } }
+                                }
+                                .accessibilityIdentifier("confirmDeleteActivity")
+                                Button("Abbrechen", role: .cancel) {}
+                            } message: {
+                                Text(activity.sourceRaw == ActivitySource.healthKit.rawValue
+                                     ? "Die Aktivität zählt nicht mehr für deine Ausrüstung. In Apple Health bleibt sie erhalten."
+                                     : "Die Aktivität wird endgültig gelöscht und zählt nicht mehr für deine Ausrüstung.")
+                            }
                     }
                 }
                 .sheet(isPresented: $showChange) {

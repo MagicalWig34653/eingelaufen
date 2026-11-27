@@ -25,11 +25,13 @@ struct MediaStore: Sendable {
     /// Entfernt alle Fotos, die kein Gegenstand mehr nutzt (nach Löschen und Wiederherstellen).
     func prune(keeping paths: Set<String>) throws {
         let fm = FileManager.default
-        guard let files = fm.enumerator(at: root, includingPropertiesForKeys: [.isRegularFileKey]) else { return }
-        let base = root.standardizedFileURL.path + "/"
-        for case let file as URL in files where (try? file.resourceValues(forKeys: [.isRegularFileKey]).isRegularFile) == true {
-            let relative = String(file.standardizedFileURL.path.dropFirst(base.count))
-            if !paths.contains(relative) { try fm.removeItem(at: file) }
+        guard fm.fileExists(atPath: root.path) else { return }
+        // Relative Pfade direkt vom System: kein Vergleich absoluter Pfade (/var ↔ /private/var).
+        for relative in try fm.subpathsOfDirectory(atPath: root.path) where !paths.contains(relative) {
+            let file = root.appendingPathComponent(relative)
+            var isDirectory: ObjCBool = false
+            guard fm.fileExists(atPath: file.path, isDirectory: &isDirectory), !isDirectory.boolValue else { continue }
+            try fm.removeItem(at: file)
         }
     }
 
@@ -67,12 +69,15 @@ struct BackupService: Sendable {
         return ImportCandidate(document: document, preview: preview)
     }
 
-    /// Ein Commit für den Bestand (Ledger neu, `dataReplaced`). Fotos werden vorher geschrieben (eine Datei ohne
-    /// Verweis schadet nicht) und danach aufgeräumt. Bei einem Fehler bleibt der Bestand unverändert.
+    /// Ein Commit für den Bestand (Ledger neu, `dataReplaced`), danach die Fotos, die das Ergebnis nutzt, und
+    /// Aufräumen. Bei einem ungültigen Backup bleibt alles unverändert.
     func restore(_ document: BackupDocument, mode: RestoreMode, now: Date) async throws {
-        let result = try BackupRestore.restore(document, into: try await persistence.dataset(), mode: mode)
-        for photo in BackupRestore.media(of: document, for: result) { try media.write(photo) }
-        try await persistence.load(result, now: now)
+        let result = try await persistence.restore(document, mode: mode, now: now)
+        for photo in BackupRestore.media(of: document, for: result) {
+            // Vorrang Bestand: ein vorhandenes lokales Foto bleibt, auch bei gleichem Pfad.
+            if mode == .merge(prefer: .existing), media.read(photo.path) != nil { continue }
+            try media.write(photo)
+        }
         try media.prune(keeping: Set(result.gear.compactMap(\.photoPath)))
     }
 

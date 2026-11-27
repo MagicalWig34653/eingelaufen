@@ -178,6 +178,23 @@ actor PersistenceActor {
         try rebuildLedgerAndSummaries(input: dataset.ledgerInput, gear: dataset.gear.map(\.id), now: now, replacingEverything: true)
     }
 
+    /// Backup übernehmen (SPEC 11, ARCHITEKTUR 7): lesen, zusammenführen und ersetzen in **einem** Commit. Der
+    /// Health-Anker wird verworfen, damit der nächste Abgleich fehlende Trainings nachholt (idempotent über die Quell-ID).
+    func restore(_ document: BackupDocument, mode: RestoreMode, now: Date) throws -> GearDataset {
+        modelContext.autosaveEnabled = false
+        do {
+            let result = try BackupRestore.restore(document, into: try dataset(), mode: mode)
+            try replaceTruth(with: result, now: now)
+            if let cursor = try fetchAll(ImportCursorEntity.self).first { cursor.reset() }
+            try enqueue(.dataReplaced, [], now: now)
+            try modelContext.save()
+            return result
+        } catch {
+            modelContext.rollback()
+            throw error
+        }
+    }
+
     /// Sicherheitsnetz (ARCHITEKTUR 4): Ledger und Summen vollständig aus den Wahrheitsdaten neu aufbauen.
     func rebuildAll(now: Date = Date(timeIntervalSince1970: 0)) throws {
         modelContext.autosaveEnabled = false
@@ -378,12 +395,7 @@ actor PersistenceActor {
             settings.healthChoiceRaw = HealthChoice.connected.rawValue
             settings.importWindowDays = days
             settings.healthImportStartAt = window.startDate(now: now)
-            if let cursor = try fetchAll(ImportCursorEntity.self).first {
-                cursor.anchorData = nil
-                cursor.lastSuccessAt = nil
-                cursor.lastError = nil
-                cursor.retryPending = false
-            }
+            if let cursor = try fetchAll(ImportCursorEntity.self).first { cursor.reset() }
         }
         return CommandOutcome()
     }
@@ -607,6 +619,8 @@ extension PersistenceActor: ImportStore {
     func commitImport(_ changes: WorkoutChanges, since: Date?, now: Date) throws -> ImportSummary {
         modelContext.autosaveEnabled = false
         do {
+            // Inzwischen getrennt („Alle App-Daten löschen“ während der Abfrage): nichts mehr schreiben.
+            guard try settings().healthChoice == .connected else { return ImportSummary() }
             // ponytail: lädt je Abgleich den ganzen Bestand; erst eingrenzen, wenn die M9-Messung (10.000) es verlangt.
             let before = try dataset()
             let output = ImportReconciler.reconcile(before, changes.batch, now: now)
@@ -717,5 +731,15 @@ struct OutboxDispatcher: Sendable {
             }
         }
         return delivered
+    }
+}
+
+private extension ImportCursorEntity {
+    /// Anker und Status verwerfen: der nächste Abgleich fragt den ganzen Zeitraum neu ab.
+    func reset() {
+        anchorData = nil
+        lastSuccessAt = nil
+        lastError = nil
+        retryPending = false
     }
 }
