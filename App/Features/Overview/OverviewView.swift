@@ -12,9 +12,11 @@ struct OverviewView: View {
     @Query private var rules: [MaintenanceRuleEntity]
     @Query private var events: [MaintenanceEventEntity]
     @Query private var installations: [InstallationEntity]
+    @Query private var pendings: [PendingEntity]
     @State private var showAddGear = false
     @State private var showAddActivity = false
 
+    private var openAssignments: Int { InboxEntries.open(pendings: pendings, activities: activities).count }
     private var activeGear: [GearEntity] { gear.filter { $0.statusRaw != GearStatus.archived.rawValue } }
 
     var body: some View {
@@ -32,6 +34,17 @@ struct OverviewView: View {
                 }
             } else {
                 List {
+                    if openAssignments > 0 {
+                        Section("Zuordnung offen") {
+                            NavigationLink(value: InboxRoute()) {
+                                Label(openAssignments == 1 ? "1 Aktivität wartet auf Zuordnung" : "\(openAssignments) Aktivitäten warten auf Zuordnung",
+                                      systemImage: "tray")
+                                    .font(.body.weight(.semibold))
+                                    .frame(minHeight: 44, alignment: .leading)
+                            }
+                            .accessibilityIdentifier("inboxLink")
+                        }
+                    }
                     Section("Status") {
                         LabeledContent("Ausrüstung", value: "\(activeGear.count)")
                         LabeledContent("Aktivitäten", value: "\(activities.count)")

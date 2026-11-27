@@ -121,4 +121,38 @@ final class ScreenshotUITests: XCTestCase {
         XCTAssertTrue(app.textFields["replaceName"].waitForExistence(timeout: 8))
         shot(app, "\(tag)-m5-5-ersetzen")
     }
+
+    /// M4: Übersicht mit offener Zuordnung, Posteingang, Auswahl-Dialog, Verlauf, Regeln und Sets (hell/dunkel stellt der Aufrufer ein).
+    @MainActor
+    func testInboxScreens() {
+        let tag = ProcessInfo.processInfo.environment["SCREENSHOT_TAG"] ?? "light"
+        let app = launch("inbox")
+        let link = app.buttons["inboxLink"]
+        XCTAssertTrue(app.reveal(link))
+        shot(app, "\(tag)-m4-1-uebersicht-offen")
+        link.tap()
+        XCTAssertTrue(app.buttons["inboxConfirm"].waitForExistence(timeout: 8))
+        shot(app, "\(tag)-m4-2-posteingang")
+        app.buttons["inboxChange"].firstMatch.tap()
+        XCTAssertTrue(app.buttons["presetOffer.Rennrad komplett"].waitForExistence(timeout: 8))
+        app.buttons["presetOffer.Rennrad komplett"].tap()
+        shot(app, "\(tag)-m4-3-auswahl-set")
+        app.buttons["assignCancel"].tap()
+        app.switches["inboxRemember"].firstMatch.flip()
+        app.buttons["inboxConfirm"].firstMatch.tap()
+        XCTAssertTrue(app.buttons["inboxChange"].firstMatch.waitForExistence(timeout: 8))
+        shot(app, "\(tag)-m4-4-posteingang-eine-offen")
+        app.navigationBars.buttons.firstMatch.tap()
+        app.tabBars.buttons["Verlauf"].tapWhenReady()
+        XCTAssertTrue(app.element(id: "historyList").waitForExistence(timeout: 8))
+        shot(app, "\(tag)-m4-5-verlauf")
+        app.buttons["settingsButton"].tapWhenReady()
+        app.buttons["rulesLink"].tapWhenReady()
+        XCTAssertTrue(app.switches["ruleToggle"].firstMatch.waitForExistence(timeout: 8))
+        shot(app, "\(tag)-m4-6-regeln")
+        app.navigationBars.buttons.firstMatch.tap()
+        app.buttons["presetsLink"].tapWhenReady()
+        XCTAssertTrue(app.element(labelContaining: "Rennrad komplett").waitForExistence(timeout: 8))
+        shot(app, "\(tag)-m4-7-sets")
+    }
 }

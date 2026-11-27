@@ -90,3 +90,11 @@ extension XCUIApplication {
         element.tap()
     }
 }
+
+extension XCUIElement {
+    /// Der Schalter sitzt rechts in der Zeile; ein Tipp in die Mitte trifft nur die Beschriftung (siehe FlowUITests).
+    func flip(file: StaticString = #filePath, line: UInt = #line) {
+        XCTAssertTrue(waitForExistence(timeout: 8), "Schalter fehlt: \(self)", file: file, line: line)
+        coordinate(withNormalizedOffset: CGVector(dx: 0.93, dy: 0.5)).tap()
+    }
+}

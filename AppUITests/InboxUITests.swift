@@ -53,7 +53,8 @@ final class InboxUITests: XCTestCase {
         openInbox(app)
         let remember = app.switches["inboxRemember"].firstMatch
         XCTAssertTrue(remember.waitForExistence(timeout: 8))
-        remember.tap()
+        remember.flip()
+        XCTAssertEqual(remember.value as? String, "1", "„Merken“ ist eingeschaltet")
         app.buttons["inboxConfirm"].firstMatch.tap()
         XCTAssertTrue(app.buttons["inboxChange"].firstMatch.waitForExistence(timeout: 8))
         app.navigationBars.buttons.firstMatch.tap()
@@ -63,7 +64,7 @@ final class InboxUITests: XCTestCase {
         let toggle = app.switches["ruleToggle"].firstMatch
         XCTAssertTrue(toggle.waitForExistence(timeout: 8), "Die gemerkte Regel steht in der Regelansicht")
         XCTAssertEqual(toggle.value as? String, "1")
-        toggle.tap()
+        toggle.flip()
         XCTAssertEqual(app.switches["ruleToggle"].firstMatch.value as? String, "0", "abschaltbar")
     }
 
@@ -75,11 +76,34 @@ final class InboxUITests: XCTestCase {
         XCTAssertTrue(app.reveal(done), "abgeschlossene Fahrt mit Canyon")
         done.tap()
         app.buttons["changeGear"].tapWhenReady()
-        app.buttons["gearToggle.Canyon Endurace"].tapWhenReady()
-        app.buttons["gearToggle.Cube Agree"].tapWhenReady()
+        app.switches["gearToggle.Canyon Endurace"].flip()
+        app.switches["gearToggle.Cube Agree"].flip()
         app.buttons["assignConfirm"].tapWhenReady()
-        XCTAssertTrue(app.staticTexts["activityGearList"].waitForExistence(timeout: 8))
-        XCTAssertTrue(app.staticTexts["activityGearList"].label.contains("Cube Agree"))
+        let list = app.staticTexts["activityGearList"]
+        // Das Blatt schließt, während die Anzeige noch den alten Stand trägt: auf den neuen warten.
+        expectation(for: NSPredicate(format: "label CONTAINS 'Cube Agree'"), evaluatedWith: list)
+        waitForExpectations(timeout: 8)
         XCTAssertFalse(app.staticTexts["activityGearList"].label.contains("Canyon"))
+    }
+
+    @MainActor
+    func testCreatePresetAndMakeItTheDefault() {
+        let app = launch("inbox")
+        app.buttons["settingsButton"].tapWhenReady()
+        app.buttons["presetsLink"].tapWhenReady()
+        XCTAssertTrue(app.buttons["preset.Rennrad komplett"].waitForExistence(timeout: 8) || app.staticTexts["Rennrad komplett"].exists)
+        app.buttons["presetAdd"].tapWhenReady()
+        let name = app.textFields["presetName"]
+        name.tapWhenReady()
+        name.typeText("Pendeln")
+        app.switches["presetMember.Cube Agree"].flip()
+        app.buttons["presetSave"].tapWhenReady()
+        XCTAssertTrue(app.element(labelContaining: "Pendeln").waitForExistence(timeout: 8), "Das neue Set steht in der Liste")
+        // Standard-Set je Sportart (Radsport ist im Fixture eingerichtet).
+        let picker = app.buttons["defaultPreset.cycling"]
+        XCTAssertTrue(app.reveal(picker))
+        picker.tap()
+        app.buttons["Pendeln"].tapWhenReady()
+        XCTAssertTrue(app.buttons["defaultPreset.cycling"].label.contains("Pendeln"), app.buttons["defaultPreset.cycling"].label)
     }
 }

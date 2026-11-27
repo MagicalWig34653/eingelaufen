@@ -18,6 +18,9 @@ enum Fixtures {
         case "nested":
             try? await persistence.load(nested)
             _ = try? await persistence.apply(.completeOnboarding(OnboardingChoice(categories: [.cycling], health: .later)), now: at(day: 0))
+        case "inbox":
+            try? await persistence.load(inbox)
+            _ = try? await persistence.apply(.completeOnboarding(OnboardingChoice(categories: [.cycling], health: .later)), now: at(day: 0))
         case "maintenance":
             try? await persistence.load(maintenance)
             _ = try? await persistence.apply(.completeOnboarding(OnboardingChoice(categories: [.cycling], health: .later)), now: at(day: 0))
@@ -48,6 +51,35 @@ enum Fixtures {
         d.maintenanceRules = [
             MaintenanceRule(gearID: chain.id, kind: .lubricated, metric: .distance, intervalValue: 100_000, warningLeadValue: 20_000),
             MaintenanceRule(gearID: chain.id, kind: .wearMeasured, metric: .distance, intervalValue: 0.5),
+        ]
+        return d
+    }
+
+    /// Posteingang (M4): zwei Rennräder, Helm, Radschuhe, Set „Rennrad komplett“, eine abgeschlossene Fahrt auf dem Canyon (Tag 2),
+    /// offen: Tag 8 mit Vorschlag Canyon (Gewohnheit), Tag 6 ohne Vorschlag (beide Räder gleich plausibel).
+    static var inbox: GearDataset {
+        let canyon = GearItem(name: "Canyon Endurace", createdAt: at(day: 0), category: .cycling, subtype: .roadBike)
+        let cube = GearItem(name: "Cube Agree", createdAt: at(day: 0), category: .cycling, subtype: .roadBike)
+        let helmet = GearItem(name: "Helm", createdAt: at(day: 0), category: .cycling)
+        let shoes = GearItem(name: "Radschuhe", createdAt: at(day: 0), category: .cycling)
+        let cycling = SportCategory.cycling.defaultSportType
+        var d = GearDataset()
+        d.gear = [canyon, cube, helmet, shoes]
+        d.statusChanges = d.gear.map { GearStatusChange(gearID: $0.id, status: .active, effectiveAt: at(day: 0)) }
+        d.presets = [GearPreset(name: "Rennrad komplett", sportTypes: [cycling], memberGearIDs: [canyon.id, helmet.id, shoes.id])]
+        func ride(_ source: String, day: Double, km: Double) -> ActivityRecord {
+            ActivityRecord(source: .healthKit, sourceID: source, sportType: cycling, startAt: at(day: day),
+                           endAt: at(day: day).addingTimeInterval(5_400), distanceMeters: km * 1_000, durationSeconds: 5_400,
+                           sourceName: "Testuhr")
+        }
+        let done = ride("inbox-done", day: 2, km: 42.3), unclear = ride("inbox-unclear", day: 6, km: 28.1), suggested = ride("inbox-suggested", day: 8, km: 35)
+        d.activities = [done, unclear, suggested]
+        d.assignments = [ActivityGearAssignment(activityID: done.id, gearID: canyon.id, origin: .manual, createdAt: at(day: 2))]
+        d.pendings = [
+            PendingAssignment(activityID: suggested.id, state: .suggested, proposedGearIDs: [canyon.id], alternatives: [[cube.id]],
+                              reason: .history, confidence: .medium, createdAt: at(day: 8)),
+            PendingAssignment(activityID: unclear.id, state: .unresolved, candidateGearIDs: [canyon.id, cube.id],
+                              reason: .multipleCandidates, confidence: .none, createdAt: at(day: 6)),
         ]
         return d
     }

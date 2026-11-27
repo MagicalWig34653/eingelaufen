@@ -21,7 +21,7 @@ struct HistoryView: View {
                         .accessibilityIdentifier("historyAdd")
                 }
             } else {
-                List(activities, id: \.id) { ActivityRow(activity: $0, showsGear: true) }
+                List(activities, id: \.id) { ActivityRow(activity: $0, showsGear: true, linked: true) }
                     .accessibilityIdentifier("historyList")
             }
         }
@@ -41,14 +41,24 @@ struct HistoryView: View {
 struct ActivityRow: View {
     let activity: ActivityEntity
     var showsGear = false
+    /// Im Verlauf öffnet die Zeile die Aktivität (Korrektur der Ausrüstung, SPEC 6.3).
+    var linked = false
     @Query private var assignments: [AssignmentEntity]
+    @Query private var pendings: [PendingEntity]
     @Query private var gear: [GearEntity]
 
-    init(activity: ActivityEntity, showsGear: Bool = false) {
+    init(activity: ActivityEntity, showsGear: Bool = false, linked: Bool = false) {
         self.activity = activity
         self.showsGear = showsGear
+        self.linked = linked
         let id = activity.id
         _assignments = Query(filter: #Predicate { $0.activityID == id })
+        _pendings = Query(filter: #Predicate { $0.activityID == id })
+    }
+
+    private var isOpen: Bool {
+        pendings.contains { $0.stateRaw != PendingState.resolved.rawValue && $0.stateRaw != PendingState.dismissed.rawValue
+            && $0.stateRaw != PendingState.obsolete.rawValue }
     }
 
     private var category: SportCategory { SportCatalog.category(for: SportType(rawValue: activity.sportTypeRaw)) }
@@ -56,10 +66,20 @@ struct ActivityRow: View {
     private var gearNames: String {
         let ids = Set(assignments.map(\.gearID))
         let names = gear.filter { ids.contains($0.id) }.map(\.name).sorted()
-        return names.isEmpty ? "Ohne Ausrüstung" : names.joined(separator: ", ")
+        if names.isEmpty { return isOpen ? "Zuordnung offen" : "Ohne Ausrüstung" }
+        return names.joined(separator: ", ")
     }
 
     var body: some View {
+        if linked {
+            NavigationLink(value: ActivityRoute(id: activity.id)) { content }
+                .accessibilityIdentifier("activityRow.\(gearNames)")
+        } else {
+            content
+        }
+    }
+
+    private var content: some View {
         HStack(spacing: 12) {
             SymbolBadge(systemName: DisplayNames.symbol(for: category))
             VStack(alignment: .leading, spacing: 2) {
@@ -72,5 +92,64 @@ struct ActivityRow: View {
         }
         .frame(minHeight: 48)
         .accessibilityElement(children: .combine)
+    }
+}
+
+/// Aktivität öffnen und Ausrüstung korrigieren (SPEC S06, 6.3, US-07): Nutzung des alten Teils sinkt, die des neuen steigt.
+struct ActivityDetailView: View {
+    let activityID: UUID
+    @Environment(AppModel.self) private var model
+    @Query private var activities: [ActivityEntity]
+    @Query private var assignments: [AssignmentEntity]
+    @Query private var pendings: [PendingEntity]
+    @Query private var gear: [GearEntity]
+    @State private var showChange = false
+
+    init(activityID: UUID) {
+        self.activityID = activityID
+        _activities = Query(filter: #Predicate { $0.id == activityID })
+        _assignments = Query(filter: #Predicate { $0.activityID == activityID })
+        _pendings = Query(filter: #Predicate { $0.activityID == activityID })
+    }
+
+    private var assigned: [GearEntity] {
+        let ids = Set(assignments.filter { $0.segmentID == nil }.map(\.gearID))
+        return gear.filter { ids.contains($0.id) }.sorted { $0.name < $1.name }
+    }
+    private var hasOpenEntry: Bool { !InboxEntries.open(pendings: pendings, activities: activities).isEmpty }
+
+    var body: some View {
+        Group {
+            if let activity = activities.first, activity.deletedAt == nil {
+                List {
+                    Section("Aktivität") {
+                        let category = SportCatalog.category(for: SportType(rawValue: activity.sportTypeRaw))
+                        LabeledContent("Sportart", value: DisplayNames.name(for: category))
+                        LabeledContent("Beginn", value: activity.startAt.formatted(date: .abbreviated, time: .shortened))
+                        LabeledContent("Dauer", value: DisplayNames.durationText(activity.durationSeconds))
+                        LabeledContent("Distanz", value: DisplayNames.distance(activity.distanceMeters.map { .measured($0, isComplete: true) } ?? .noData))
+                    }
+                    Section {
+                        Text(assigned.isEmpty ? (hasOpenEntry ? "Zuordnung offen" : "Ohne Ausrüstung") : assigned.map(\.name).joined(separator: ", "))
+                            .accessibilityIdentifier("activityGearList")
+                        Button("Ausrüstung ändern", systemImage: "pencil") { showChange = true }
+                            .accessibilityIdentifier("changeGear")
+                    } header: {
+                        Text("Ausrüstung")
+                    } footer: {
+                        Text("Eine Änderung gilt rückwirkend: die Nutzung des alten Teils sinkt, die des neuen steigt.")
+                    }
+                }
+                .sheet(isPresented: $showChange) {
+                    AssignSheet(activity: activity, initial: Set(assigned.map(\.id)), showsRemember: false, allowsEmpty: true) { ids, _ in
+                        await model.run(.setActivityGear(activity: activity.id, gear: ids)) != nil
+                    }
+                }
+            } else {
+                ContentUnavailableView("Aktivität nicht gefunden", systemImage: "questionmark.circle")
+            }
+        }
+        .navigationTitle("Aktivität")
+        .navigationBarTitleDisplayMode(.inline)
     }
 }

@@ -14,6 +14,7 @@ struct SettingsView: View {
         NavigationStack {
             Form {
                 HealthSettingsSection()
+                AssignmentSettingsSection()
                 Section("Datenschutz") {
                     Text("Alle Daten bleiben auf diesem Gerät. Kein Konto, kein Server, kein Tracking.")
                 }
