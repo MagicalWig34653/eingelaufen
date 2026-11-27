@@ -89,7 +89,7 @@ struct AssignSheet: View {
                     }
                 }
             }
-            .navigationTitle("Ausrüstung wählen")
+            .navigationTitle("Ausrüstung")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("Abbrechen") { dismiss() }.accessibilityIdentifier("assignCancel") }

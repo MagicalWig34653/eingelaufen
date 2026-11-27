@@ -88,15 +88,21 @@ private struct InboxCard: View {
                 Text(InboxTexts.reason(pending.reason)).font(.footnote).foregroundStyle(.secondary)
             }
 
-            HStack(spacing: 12) {
-                if hasProposal { changeButton.buttonStyle(.bordered) } else { changeButton.buttonStyle(.borderedProminent) }
-                Button { dismissEntry() } label: {
-                    Text("Nicht zuordnen").frame(maxWidth: .infinity, minHeight: 36)
-                }
-                .buttonStyle(.bordered)
-                .accessibilityIdentifier("inboxDismiss")
+            // Ohne Vorschlag steht die Hauptaktion untereinander: der längere Text bricht sonst in der Zeile um.
+            if hasProposal {
+                HStack(spacing: 12) { changeButton.buttonStyle(.bordered); dismissButton }
+            } else {
+                VStack(spacing: 12) { changeButton.buttonStyle(.borderedProminent); dismissButton }
             }
         }
+    }
+
+    private var dismissButton: some View {
+        Button { dismissEntry() } label: {
+            Text("Nicht zuordnen").frame(maxWidth: .infinity, minHeight: 36)
+        }
+        .buttonStyle(.bordered)
+        .accessibilityIdentifier("inboxDismiss")
     }
 
     private var changeButton: some View {

@@ -37,7 +37,7 @@ final class InboxUITests: XCTestCase {
         let app = launch("inbox")
         openInbox(app)
         app.buttons["inboxChange"].firstMatch.tapWhenReady()
-        XCTAssertTrue(app.navigationBars["Ausrüstung wählen"].waitForExistence(timeout: 8))
+        XCTAssertTrue(app.navigationBars["Ausrüstung"].waitForExistence(timeout: 8))
         app.buttons["presetOffer.Rennrad komplett"].tapWhenReady()
         app.buttons["assignConfirm"].tapWhenReady()
         XCTAssertTrue(app.navigationBars["Zuordnung"].waitForExistence(timeout: 8))
