@@ -16,7 +16,7 @@ struct NotificationSettingsSection: View {
 
     var body: some View {
         Section {
-            Picker("Mitteilungen", selection: Binding(get: { preferences.level }, set: { save(level: $0) })) {
+            Picker("Erinnern an", selection: Binding(get: { preferences.level }, set: { save(level: $0) })) {
                 Text("Aus").tag(NotificationLevel.off)
                 Text("Nur Zuordnung").tag(NotificationLevel.assignmentOnly)
                 Text("Zuordnung und Wartung").tag(NotificationLevel.assignmentAndMaintenance)

@@ -53,7 +53,8 @@ struct MainTabs: View {
         }
         .sheet(isPresented: $showSettings) { SettingsView() }
         // Deep Link aus einer Benachrichtigung (SPEC 7.2 „Auswählen“, 7.4 Wartung): Übersicht › Posteingang bzw. Gegenstand.
-        .onChange(of: model.notificationRoute) { _, route in
+        // `initial`: Beim Kaltstart steht das Ziel schon fest, bevor es diese Ansicht gibt.
+        .onChange(of: model.notificationRoute, initial: true) { _, route in
             guard let route else { return }
             showSettings = false
             selection = .overview

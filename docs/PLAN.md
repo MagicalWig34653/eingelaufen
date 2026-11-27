@@ -70,7 +70,7 @@ Abhängigkeiten in Klammern. „Namensunabhängig“ heißt: kann vor E-01 start
 - `MaintenanceRule` je Gegenstand (Distanz, Dauer, Anzahl, Kalender, Messgrenze, optional „frühester Wert“), drei getrennte Statusarten (Intervall / Messwert / Prognose mit Kennzeichnung „Schätzung“), max. 3 Hinweise auf der Übersicht.
 - **DoD (= Spec Phase 2):** Kettenwechsel historisch konsistent (T-02), Wartung in ≤ 3 Aktionen ab Detail (Spec 13, als UI-Test gezählt), UI-Test „Komponente tauschen, alte Historie aufrufen“.
 
-### M6 Lokale Benachrichtigungen (M4, M5)
+### M6 Lokale Benachrichtigungen (M4, M5) – Software umgesetzt 27.11.2026, Gerätetest offen
 - Kategorien/Aktionen („Vorschlag übernehmen“, „Andere auswählen“, „Später“; bei Mehrdeutigkeit „Ausrüstung wählen“), Ausführung idempotent über `(pendingID, proposalRevision)`, Bündelung, Ruhezeiten, Stufen, kontextbezogene Berechtigungsanfrage.
 - Wartungserinnerungen nur für aktivierte Regeln, Cooldown 7 Tage, Text „Prüfen“, Deep Link zur Wartung.
 - **DoD:** T-10 im Kern und im App-Test (doppelte Aktion, veraltete Aktion nach Bearbeitung); App ohne Berechtigung vollständig bedienbar (UI-Test).

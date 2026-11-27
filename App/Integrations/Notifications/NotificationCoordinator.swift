@@ -8,6 +8,7 @@ actor NotificationCoordinator {
     let persistence: PersistenceActor
     let center: any NotificationCenterClient
     private let calendar: Calendar
+    private var last: Task<NotificationPlan, Never>?
 
     init(persistence: PersistenceActor, center: any NotificationCenterClient, calendar: Calendar = .current) {
         self.persistence = persistence
@@ -15,18 +16,32 @@ actor NotificationCoordinator {
         self.calendar = calendar
     }
 
-    /// Plan berechnen und anwenden. `requestPermission`: nur im Vordergrund, und nur wenn der Kern den Kontext sieht.
+    /// Plan berechnen und anwenden. `requestPermission`: nur aus der Oberfläche, und nur wenn der Kern den Kontext sieht.
+    /// Abgleiche laufen nacheinander (wie beim Import): sonst sähen zwei denselben Stand und meldeten doppelt.
     @discardableResult
     func refresh(now: Date, requestPermission: Bool) async -> NotificationPlan {
+        let previous = last
+        let task = Task {
+            _ = await previous?.value
+            return await self.runOnce(now: now, requestPermission: requestPermission)
+        }
+        last = task
+        return await task.value
+    }
+
+    private func runOnce(now: Date, requestPermission: Bool) async -> NotificationPlan {
         guard let dataset = try? await persistence.dataset(), let ledger = try? await persistence.ledger(),
               let preferences = try? await persistence.notificationPreferences(),
-              let sent = try? await persistence.notificationRecords() else { return NotificationPlan() }
+              let settings = try? await persistence.settings(),
+              let records = try? await persistence.notificationRecords() else { return NotificationPlan() }
+        let sent = NotificationPlanner.stillCounting(records, rules: dataset.maintenanceRules, events: dataset.maintenanceEvents)
         let open = InboxQuery.open(in: dataset).map(\.pending)
         let maintenance = NotificationPlanner.dueMaintenance(rules: dataset.maintenanceRules, events: dataset.maintenanceEvents,
                                                              entries: ledger, installations: dataset.installations,
                                                              gear: dataset.gear, now: now)
         var status = await center.authorization()
-        if requestPermission, NotificationPlanner.shouldRequestAuthorization(
+        // Erst nach dem Onboarding (SPEC 9: nicht alles beim allerersten Start).
+        if requestPermission, settings.onboardingCompleted, NotificationPlanner.shouldRequestAuthorization(
             undetermined: status == .notDetermined, level: preferences.level, openAssignments: open.count,
             enabledMaintenanceRules: dataset.maintenanceRules.filter(\.enabled).count) {
             status = await center.requestAuthorization() ? .authorized : .denied

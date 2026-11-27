@@ -86,7 +86,8 @@ final class AppModel {
             // Seiteneffekte erst nach dem Commit (A-04). Benachrichtigungen gleichen danach den ganzen Stand ab (M6),
             // Live Activity folgt mit M7.
             _ = await OutboxDispatcher(persistence: persistence).deliver(to: NoSideEffects(), now: Date())
-            await refreshNotifications(requestPermission: true)
+            // Nicht abwarten: Der Systemdialog zur Erlaubnis darf das Speichern nicht aufhalten.
+            Task { await refreshNotifications(requestPermission: true) }
             return outcome
         } catch {
             errorMessage = Self.message(for: error)

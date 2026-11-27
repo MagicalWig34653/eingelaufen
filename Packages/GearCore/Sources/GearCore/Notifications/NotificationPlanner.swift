@@ -241,9 +241,15 @@ public enum NotificationPlanner {
 
     private struct Key: Hashable { var id: UUID; var revision: Int }
 
+    /// SPEC 7.4 „oder nach deutlichem neuem Ereignis“: Eine nach der Erinnerung erledigte Wartung (gleicher Gegenstand,
+    /// gleiche Art) beendet den Cooldown dieser Regel. Alle anderen Datensätze zählen weiter.
     public static func stillCounting(_ sent: [SentNotification], rules: [MaintenanceRule],
                                      events: [MaintenanceEvent]) -> [SentNotification] {
-        sent
+        let rulesByID = Dictionary(rules.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
+        return sent.filter { record in
+            guard let rule = rulesByID[record.relatedID] else { return true }
+            return !events.contains { $0.gearID == rule.gearID && $0.kind == rule.kind && $0.performedAt > record.sentAt }
+        }
     }
 
     /// Fällige Wartung nur aus aktivierten Regeln (SPEC 7.4), Vorwarnung zählt nicht.
