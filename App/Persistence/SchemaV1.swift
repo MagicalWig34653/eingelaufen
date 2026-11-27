@@ -29,7 +29,7 @@ enum SchemaV1: VersionedSchema {
         var createdAt = Date(timeIntervalSince1970: 0)
         var categoryRaw = SportCategory.other.rawValue
         var subtypeRaw: String?
-        /// Relativer Pfad unter Application Support/Media (ARCHITEKTUR 3.2); Fotos folgen in einer späteren Stufe.
+        /// Relativer Pfad unter Application Support/Media (ARCHITEKTUR 3.2), im Kern `GearItem.photoPath` (M8).
         var imagePath: String?
         var isFavorite = false
 
@@ -44,12 +44,13 @@ enum SchemaV1: VersionedSchema {
             createdAt = g.createdAt
             categoryRaw = g.category.rawValue
             subtypeRaw = g.subtype?.rawValue
+            imagePath = g.photoPath
         }
 
         var value: GearItem {
             GearItem(id: id, name: name, purchaseDate: purchaseDate, status: GearStatus(rawValue: statusRaw) ?? .active,
                      createdAt: createdAt, category: SportCategory(rawValue: categoryRaw) ?? .other,
-                     subtype: subtypeRaw.flatMap(SportSubtype.init(rawValue:)))
+                     subtype: subtypeRaw.flatMap(SportSubtype.init(rawValue:)), photoPath: imagePath)
         }
     }
 

@@ -143,34 +143,39 @@ actor PersistenceActor {
         }
     }
 
-    /// Ersetzt den gesamten Bestand (Testdaten, UI-Fixtures, später Backup-Wiederherstellung) in einem Commit.
+    /// Ersetzt den gesamten Bestand (Testdaten, UI-Fixtures, Backup-Wiederherstellung) in einem Commit.
     func load(_ dataset: GearDataset, now: Date = Date(timeIntervalSince1970: 0)) throws {
         modelContext.autosaveEnabled = false
         do {
-            try deleteAll(GearEntity.self); try deleteAll(GearStatusChangeEntity.self); try deleteAll(InstallationEntity.self)
-            try deleteAll(GearPresetEntity.self); try deleteAll(SportProfileEntity.self); try deleteAll(ActivityEntity.self)
-            try deleteAll(ActivitySegmentEntity.self); try deleteAll(AssignmentEntity.self)
-            try deleteAll(MaintenanceEventEntity.self); try deleteAll(MaintenanceRuleEntity.self)
-            try deleteAll(AssignmentRuleEntity.self); try deleteAll(PendingEntity.self)
-            dataset.gear.forEach { modelContext.insert(GearEntity($0)) }
-            dataset.statusChanges.forEach { modelContext.insert(GearStatusChangeEntity($0)) }
-            dataset.installations.forEach { modelContext.insert(InstallationEntity($0)) }
-            dataset.presets.forEach { modelContext.insert(GearPresetEntity($0)) }
-            dataset.sportProfiles.forEach { modelContext.insert(SportProfileEntity($0)) }
-            dataset.activities.forEach { modelContext.insert(ActivityEntity($0)) }
-            dataset.segments.forEach { modelContext.insert(ActivitySegmentEntity($0)) }
-            dataset.assignments.forEach { modelContext.insert(AssignmentEntity($0)) }
-            dataset.maintenanceEvents.forEach { modelContext.insert(MaintenanceEventEntity($0)) }
-            dataset.maintenanceRules.forEach { modelContext.insert(MaintenanceRuleEntity($0)) }
-            dataset.assignmentRules.forEach { modelContext.insert(AssignmentRuleEntity($0)) }
-            dataset.pendings.forEach { modelContext.insert(PendingEntity($0)) }
-            try rebuildLedgerAndSummaries(input: dataset.ledgerInput, gear: dataset.gear.map(\.id), now: now, replacingEverything: true)
+            try replaceTruth(with: dataset, now: now)
             try enqueue(.dataReplaced, [], now: now)
             try modelContext.save()
         } catch {
             modelContext.rollback()
             throw error
         }
+    }
+
+    /// Ersetzt alle Wahrheitsdaten und baut Ledger und Summen neu (ohne Speichern; Aufrufer committet).
+    private func replaceTruth(with dataset: GearDataset, now: Date) throws {
+        try deleteAll(GearEntity.self); try deleteAll(GearStatusChangeEntity.self); try deleteAll(InstallationEntity.self)
+        try deleteAll(GearPresetEntity.self); try deleteAll(SportProfileEntity.self); try deleteAll(ActivityEntity.self)
+        try deleteAll(ActivitySegmentEntity.self); try deleteAll(AssignmentEntity.self)
+        try deleteAll(MaintenanceEventEntity.self); try deleteAll(MaintenanceRuleEntity.self)
+        try deleteAll(AssignmentRuleEntity.self); try deleteAll(PendingEntity.self)
+        dataset.gear.forEach { modelContext.insert(GearEntity($0)) }
+        dataset.statusChanges.forEach { modelContext.insert(GearStatusChangeEntity($0)) }
+        dataset.installations.forEach { modelContext.insert(InstallationEntity($0)) }
+        dataset.presets.forEach { modelContext.insert(GearPresetEntity($0)) }
+        dataset.sportProfiles.forEach { modelContext.insert(SportProfileEntity($0)) }
+        dataset.activities.forEach { modelContext.insert(ActivityEntity($0)) }
+        dataset.segments.forEach { modelContext.insert(ActivitySegmentEntity($0)) }
+        dataset.assignments.forEach { modelContext.insert(AssignmentEntity($0)) }
+        dataset.maintenanceEvents.forEach { modelContext.insert(MaintenanceEventEntity($0)) }
+        dataset.maintenanceRules.forEach { modelContext.insert(MaintenanceRuleEntity($0)) }
+        dataset.assignmentRules.forEach { modelContext.insert(AssignmentRuleEntity($0)) }
+        dataset.pendings.forEach { modelContext.insert(PendingEntity($0)) }
+        try rebuildLedgerAndSummaries(input: dataset.ledgerInput, gear: dataset.gear.map(\.id), now: now, replacingEverything: true)
     }
 
     /// Sicherheitsnetz (ARCHITEKTUR 4): Ledger und Summen vollständig aus den Wahrheitsdaten neu aufbauen.
@@ -264,7 +269,9 @@ actor PersistenceActor {
         case .setAssignmentRuleEnabled(let id, let enabled): try setRuleEnabled(id, enabled, now: now)
         case .removeAssignmentRule(let id): try removeAssignmentRule(id, now: now)
         case .setNotificationPreferences(let prefs): try setNotificationPreferences(prefs, now: now)
-        case .deleteGear, .deleteActivity, .deleteAllData: CommandOutcome()
+        case .deleteGear(let id): try deleteGear(id, now: now)
+        case .deleteActivity(let id): try deleteActivity(id, now: now)
+        case .deleteAllData: try deleteAllData(now: now)
         }
     }
 
@@ -528,6 +535,34 @@ actor PersistenceActor {
             modelContext.insert(row)
         }
         row.store(summary, at: now)
+    }
+
+    // MARK: Löschen (M8, SPEC 11)
+
+    private func deleteGear(_ id: UUID, now: Date) throws -> CommandOutcome {
+        let next: GearDataset
+        do { next = try DataDeletion.deleteGear(id, in: try dataset()) } catch is DeletionError { throw PersistenceError.gearNotFound(id) }
+        try replaceTruth(with: next, now: now)
+        try enqueue(.gearChanged, [id], now: now)
+        return CommandOutcome(gearID: id)
+    }
+
+    private func deleteActivity(_ id: UUID, now: Date) throws -> CommandOutcome {
+        let next: GearDataset
+        do { next = try DataDeletion.deleteActivity(id, in: try dataset(), now: now) } catch is DeletionError { throw PersistenceError.activityNotFound }
+        try replaceTruth(with: next, now: now)
+        try enqueue(.activityChanged, [id], now: now)
+        return CommandOutcome(activityID: id)
+    }
+
+    /// „Alle App-Daten löschen“: Wahrheit, Ledger, Einstellungen (Onboarding beginnt neu), Health-Anker,
+    /// gesendete Mitteilungen und alte Outbox. Danach steht genau ein `dataReplaced` an (Mitteilungen räumen ab).
+    private func deleteAllData(now: Date) throws -> CommandOutcome {
+        try replaceTruth(with: GearDataset(), now: now)
+        try deleteAll(AppSettingsEntity.self); try deleteAll(ImportCursorEntity.self)
+        try deleteAll(NotificationRecordEntity.self); try deleteAll(OutboxEntity.self)
+        try enqueue(.dataReplaced, [], now: now)
+        return CommandOutcome()
     }
 
     // MARK: Hilfen
