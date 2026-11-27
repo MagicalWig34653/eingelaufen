@@ -216,6 +216,22 @@ struct NotificationPlannerTests {
         #expect(plan(maintenance: [due(70)], sent: sent, at: now.addingTimeInterval(7 * 86_400)).schedule.map(\.identifier) == [ident])
     }
 
+    /// SPEC 7.4 „oder nach deutlichem neuem Ereignis“: nach einer Wartung beginnt der Cooldown der Regel neu.
+    @Test func maintenanceDoneAfterTheReminderEndsTheCooldown() {
+        let rule = MaintenanceRule(id: id(70), gearID: id(3), kind: .inspected, metric: .calendarAge, intervalValue: 1)
+        let sent = [SentNotification(relatedID: id(70), revision: RuleState.due.rawValue,
+                                     identifier: NotificationIdentifier.maintenance(id(70)), sentAt: day(10)),
+                    SentNotification(relatedID: id(501), revision: 1, identifier: "pending.x", sentAt: day(10))]
+        func kept(_ events: [MaintenanceEvent]) -> [UUID] {
+            NotificationPlanner.stillCounting(sent, rules: [rule], events: events).map(\.relatedID)
+        }
+        #expect(kept([]) == [id(70), id(501)])
+        #expect(kept([MaintenanceEvent(gearID: id(3), kind: .inspected, performedAt: day(9))]) == [id(70), id(501)])
+        #expect(kept([MaintenanceEvent(gearID: id(3), kind: .cleaned, performedAt: day(11))]) == [id(70), id(501)])
+        #expect(kept([MaintenanceEvent(gearID: id(4), kind: .inspected, performedAt: day(11))]) == [id(70), id(501)])
+        #expect(kept([MaintenanceEvent(gearID: id(3), kind: .inspected, performedAt: day(11))]) == [id(501)])
+    }
+
     @Test func measurementLimitWithoutRuleIsKeyedByGear() {
         let p = plan(maintenance: [MaintenanceHint(gearID: id(3), ruleID: nil, state: .due, source: .measurement)])
         #expect(p.schedule.first?.identifier == NotificationIdentifier.maintenance(id(3)))

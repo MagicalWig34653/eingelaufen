@@ -241,6 +241,11 @@ public enum NotificationPlanner {
 
     private struct Key: Hashable { var id: UUID; var revision: Int }
 
+    public static func stillCounting(_ sent: [SentNotification], rules: [MaintenanceRule],
+                                     events: [MaintenanceEvent]) -> [SentNotification] {
+        sent
+    }
+
     /// Fällige Wartung nur aus aktivierten Regeln (SPEC 7.4), Vorwarnung zählt nicht.
     public static func dueMaintenance(rules: [MaintenanceRule], events: [MaintenanceEvent], entries: [UsageLedgerEntry],
                                       installations: [Installation], gear: [GearItem], now: Date) -> [MaintenanceHint] {

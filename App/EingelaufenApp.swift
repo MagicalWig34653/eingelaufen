@@ -116,6 +116,11 @@ struct EingelaufenApp: App {
         if let fixture = AppEnvironment.value(of: "-UITestFixture") {
             await Fixtures.apply(fixture, to: AppEnvironment.model.persistence)
         }
+        // Stellt den Kaltstart nach: Antwort auf eine Mitteilung, bevor die Oberfläche steht.
+        if AppEnvironment.value(of: "-UITestNotificationTap") == "inbox" {
+            await AppEnvironment.model.handleNotification(actionIdentifier: UNNotificationDefaultActionIdentifier,
+                                                          categoryIdentifier: "inboxSummary", userInfo: [:])
+        }
         #endif
         ready = true
         await AppEnvironment.model.refreshNotifications(requestPermission: true)

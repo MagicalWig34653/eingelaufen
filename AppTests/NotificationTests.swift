@@ -25,7 +25,12 @@ actor RecordingNotificationCenter: NotificationCenterClient {
         status = grantOnRequest ? .authorized : .denied
         return grantOnRequest
     }
-    func identifiers() async -> Set<String> { live }
+    private var slow = false
+    func setSlow() { slow = true }
+    func identifiers() async -> Set<String> {
+        if slow { try? await Task.sleep(for: .milliseconds(100)) }
+        return live
+    }
     func add(_ request: NotificationRequestValue) async throws {
         added.append(request)
         live.insert(request.identifier)
@@ -53,7 +58,7 @@ private let utc: Calendar = {
 
 /// Zwei Räder, eine Fahrt mit offenem Vorschlag „Rad A“ (Revision 1); optional eine fällige Wartungsregel an Rad B.
 private func world(status: NotificationAuthorization = .authorized, pending: Bool = true,
-                   maintenanceRule: Bool = false) async throws -> World {
+                   maintenanceRule: Bool = false, onboarded: Bool = true) async throws -> World {
     let p = try makePersistence()
     let bikeA = GearItem(name: "Rad A", createdAt: day(-100), category: .cycling, subtype: .roadBike)
     let bikeB = GearItem(name: "Rad B", createdAt: day(-99), category: .cycling, subtype: .roadBike)
@@ -71,6 +76,7 @@ private func world(status: NotificationAuthorization = .authorized, pending: Boo
         d.maintenanceEvents = [MaintenanceEvent(gearID: bikeB.id, kind: .inspected, performedAt: day(-20))]
     }
     try await p.load(d)
+    if onboarded { _ = try await p.apply(.completeOnboarding(OnboardingChoice(categories: [], health: .later)), now: day(0)) }
     let center = RecordingNotificationCenter(status: status)
     return World(p: p, center: center, coordinator: NotificationCoordinator(persistence: p, center: center, calendar: utc),
                  bikeA: bikeA, bikeB: bikeB, ride: ride, pendingID: entry.id)
@@ -199,6 +205,24 @@ private func info(_ w: World, revision: Int = 1) -> [String: String] {
         // Posteingang bleibt vollständig nutzbar.
         _ = try await w.p.apply(.resolvePending(id: w.pendingID, action: .confirm(proposalRevision: 1), remember: false), now: day(3))
         #expect(try await w.p.dataset().assignments.map(\.gearID) == [w.bikeA.id])
+    }
+
+    @Test func noPermissionPromptBeforeOnboardingIsDone() async throws {
+        let w = try await world(status: .notDetermined, onboarded: false)
+        await w.coordinator.refresh(now: day(2), requestPermission: true)
+        #expect(await w.center.requests == 0, "nicht alles beim allerersten Start (SPEC 9)")
+    }
+
+    /// Start, Vordergrund, Import und Aktion gleichen oft gleichzeitig ab: trotzdem genau eine Meldung.
+    @Test func concurrentRefreshesScheduleOnce() async throws {
+        let w = try await world()
+        await w.center.setSlow()
+        async let a = w.coordinator.refresh(now: day(2), requestPermission: false)
+        async let b = w.coordinator.refresh(now: day(2), requestPermission: false)
+        async let c = w.coordinator.refresh(now: day(2), requestPermission: false)
+        _ = await (a, b, c)
+        #expect(await w.center.added.count == 1)
+        #expect(try await w.p.notificationRecords().count == 1)
     }
 
     // MARK: Antworten (T-10 in der App)

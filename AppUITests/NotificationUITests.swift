@@ -62,4 +62,46 @@ final class NotificationUITests: XCTestCase {
         app.buttons["inboxConfirm"].firstMatch.tapWhenReady()
         XCTAssertTrue(app.element(id: "inboxEmpty").waitForExistence(timeout: 8), "Posteingang funktioniert ohne Mitteilungen")
     }
+
+    /// „Andere auswählen“ holt die App nach vorn und öffnet den Posteingang; gebucht wird nichts.
+    @MainActor
+    func testChooseActionOpensTheInbox() {
+        let app = launchWithNotifications(delay: 8)
+        let springboard = XCUIApplication(bundleIdentifier: "com.apple.springboard")
+        XCTAssertTrue(app.reveal(app.buttons["inboxLink"]))
+        XCUIDevice.shared.press(.home)
+        guard let banner = waitForBanner(containing: "Ausrüstung bestätigen", on: springboard) else { return XCTFail("keine Mitteilung") }
+        banner.press(forDuration: 1.5)
+        springboard.buttons["Andere auswählen"].tapWhenReady()
+        XCTAssertTrue(app.navigationBars["Zuordnung"].waitForExistence(timeout: 10), "Posteingang ist offen")
+        XCTAssertTrue(app.buttons["inboxConfirm"].exists, "nichts wurde gebucht")
+    }
+
+    /// Wartungserinnerung (Fixture „maintenance“: Kette fällig): „Prüfen“ führt zur Wartung des Teils (SPEC 7.4).
+    @MainActor
+    func testMaintenanceCheckActionOpensTheGear() {
+        let app = XCUIApplication()
+        app.launchArguments = ["-EingelaufenInMemory", "-UITestFixture", "maintenance", "-UITestNotifications",
+                               "-UITestNotificationDelay", "8", "-AppleLanguages", "(de)", "-AppleLocale", "de_DE"]
+        app.launch()
+        let springboard = XCUIApplication(bundleIdentifier: "com.apple.springboard")
+        XCTAssertTrue(app.first(id: "hint.Kette").waitForExistence(timeout: 10))
+        XCUIDevice.shared.press(.home)
+        guard let banner = waitForBanner(containing: "Wartung prüfen", on: springboard) else { return XCTFail("keine Mitteilung") }
+        XCTAssertTrue(banner.label.contains("Kette"), banner.label)
+        banner.press(forDuration: 1.5)
+        springboard.buttons["Prüfen"].tapWhenReady()
+        XCTAssertTrue(app.staticTexts["detailName"].waitForExistence(timeout: 10), "Detail mit Wartung ist offen")
+        XCTAssertEqual(app.staticTexts["detailName"].label, "Kette")
+    }
+
+    /// Kaltstart: die Antwort trifft ein, bevor die Oberfläche steht (DEBUG-Argument stellt das nach).
+    @MainActor
+    func testResponseBeforeTheInterfaceExistsStillOpensTheInbox() {
+        let app = XCUIApplication()
+        app.launchArguments = ["-EingelaufenInMemory", "-UITestFixture", "inboxOne", "-UITestNotificationTap", "inbox",
+                               "-AppleLanguages", "(de)", "-AppleLocale", "de_DE"]
+        app.launch()
+        XCTAssertTrue(app.navigationBars["Zuordnung"].waitForExistence(timeout: 10))
+    }
 }

@@ -155,4 +155,31 @@ final class ScreenshotUITests: XCTestCase {
         XCTAssertTrue(app.element(labelContaining: "Rennrad komplett").waitForExistence(timeout: 8))
         shot(app, "\(tag)-m4-7-sets")
     }
+
+    /// M6: Einstellungen › Mitteilungen mit Ruhezeit und die aufgeklappte Mitteilung mit ihren Aktionen (hell/dunkel stellt der Aufrufer ein).
+    @MainActor
+    func testNotificationScreens() {
+        let tag = ProcessInfo.processInfo.environment["SCREENSHOT_TAG"] ?? "light"
+        var app = launch("inboxOne")
+        app.buttons["settingsButton"].tapWhenReady()
+        let toggle = app.switches["quietHoursToggle"]
+        XCTAssertTrue(app.reveal(toggle))
+        toggle.flip()
+        XCTAssertTrue(app.reveal(app.first(id: "notificationStatus")))
+        shot(app, "\(tag)-m6-1-einstellungen-mitteilungen")
+        app.terminate()
+
+        app = XCUIApplication()
+        app.launchArguments = ["-EingelaufenInMemory", "-UITestFixture", "inboxOne", "-UITestNotifications",
+                               "-UITestNotificationDelay", "6", "-AppleLanguages", "(de)", "-AppleLocale", "de_DE"]
+        app.launch()
+        let springboard = XCUIApplication(bundleIdentifier: "com.apple.springboard")
+        XCTAssertTrue(app.reveal(app.buttons["inboxLink"]))
+        XCUIDevice.shared.press(.home)
+        guard let banner = waitForBanner(containing: "Ausrüstung bestätigen", on: springboard) else { return XCTFail("keine Mitteilung") }
+        banner.press(forDuration: 1.5)
+        XCTAssertTrue(springboard.buttons["Vorschlag übernehmen"].waitForExistence(timeout: 8))
+        shot(springboard, "\(tag)-m6-2-mitteilung-aktionen")
+        springboard.buttons["Später"].tap()
+    }
 }
