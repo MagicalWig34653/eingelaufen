@@ -247,8 +247,13 @@ actor PersistenceActor {
         case .setMaintenanceRule(let rule): try setRule(rule, now: now)
         case .removeMaintenanceRule(let id): try removeRule(id, now: now)
         case .connectHealth(let window): try connectHealth(window, now: now)
-        case .resolvePending, .setActivityGear, .createPreset, .removePreset, .setDefaultPreset,
-             .setAssignmentRuleEnabled, .removeAssignmentRule: CommandOutcome()   // ROT: noch nicht umgesetzt
+        case .resolvePending(let id, let action, let remember): try resolvePending(id, action, remember: remember, now: now)
+        case .setActivityGear(let activity, let gear): try setActivityGear(activity, gear, now: now)
+        case .createPreset(let name, let sports, let members): try createPreset(name, sports, members, now: now)
+        case .removePreset(let id): try removePreset(id, now: now)
+        case .setDefaultPreset(let sport, let preset): try setDefaultPreset(sport, preset, now: now)
+        case .setAssignmentRuleEnabled(let id, let enabled): try setRuleEnabled(id, enabled, now: now)
+        case .removeAssignmentRule(let id): try removeAssignmentRule(id, now: now)
         }
     }
 
@@ -463,7 +468,7 @@ actor PersistenceActor {
     /// Baut das Ledger der genannten Aktivitäten neu und aktualisiert die Summen der betroffenen Gegenstände.
     /// Liefert die betroffenen Gegenstände (vorher und nachher).
     @discardableResult
-    private func rebuildLedger(for activityIDs: Set<UUID>, now: Date) throws -> Set<UUID> {
+    func rebuildLedger(for activityIDs: Set<UUID>, now: Date) throws -> Set<UUID> {
         let ids = Array(activityIDs)
         let activities = try modelContext.fetch(FetchDescriptor<ActivityEntity>(predicate: #Predicate { ids.contains($0.id) })).map(\.value)
         let segments = try modelContext.fetch(FetchDescriptor<ActivitySegmentEntity>(predicate: #Predicate { ids.contains($0.activityID) })).map(\.value)
@@ -516,7 +521,7 @@ actor PersistenceActor {
 
     // MARK: Hilfen
 
-    private func enqueue(_ kind: OutboxKind, _ subjects: [UUID], now: Date) throws {
+    func enqueue(_ kind: OutboxKind, _ subjects: [UUID], now: Date) throws {
         var top = FetchDescriptor<OutboxEntity>(sortBy: [SortDescriptor(\.sequence, order: .reverse)])
         top.fetchLimit = 1
         let row = OutboxEntity()
@@ -531,7 +536,7 @@ actor PersistenceActor {
         try modelContext.fetch(FetchDescriptor<GearEntity>(predicate: #Predicate { $0.id == id })).first
     }
 
-    private func fetchAll<T: PersistentModel>(_ type: T.Type) throws -> [T] {
+    func fetchAll<T: PersistentModel>(_ type: T.Type) throws -> [T] {
         try modelContext.fetch(FetchDescriptor<T>())
     }
 
@@ -617,7 +622,7 @@ extension PersistenceActor: ImportStore {
         try enqueue(.activityChanged, affected.sorted { $0.uuidString < $1.uuidString }, now: now)
     }
 
-    private func persist<Value: Identifiable & Equatable, Row: PersistentModel>(
+    func persist<Value: Identifiable & Equatable, Row: PersistentModel>(
         _ new: [Value], was old: [Value], id: KeyPath<Row, UUID>,
         insert: (Value) -> Row, update: (Row, Value) -> Void) throws where Value.ID == UUID {
         guard new != old else { return }

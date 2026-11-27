@@ -150,8 +150,9 @@ private func world(state: PendingState = .suggested, proposal: [UUID]? = nil) as
         await #expect(throws: PersistenceError.activityNotFound) {
             _ = try await w.p.apply(.setActivityGear(activity: UUID(), gear: []), now: day(2))
         }
-        await #expect(throws: PersistenceError.gearNotFound(w.bikeA.id)) {
-            _ = try await w.p.apply(.setActivityGear(activity: w.ride.id, gear: [w.bikeA.id, UUID()]), now: day(2))
+        let ghost = UUID()
+        await #expect(throws: PersistenceError.gearNotFound(ghost)) {
+            _ = try await w.p.apply(.setActivityGear(activity: w.ride.id, gear: [w.bikeA.id, ghost]), now: day(2))
         }
     }
 }
