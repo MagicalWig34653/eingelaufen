@@ -14,13 +14,26 @@ public struct BackupDocument: Codable, Equatable, Sendable {
     public var appSchemaVersion: Int
     public var exportedAt: Date
     public var data: GearDataset
+    /// Fotos (M8), nur wenn mit Fotos exportiert; `nil` = ohne Fotos (Feld fehlt dann im JSON).
+    public var media: [BackupMedia]?
 
-    public init(exportedAt: Date, data: GearDataset) {
+    public init(exportedAt: Date, data: GearDataset, media: [BackupMedia]? = nil) {
         self.formatVersion = Self.currentFormatVersion
         self.appSchemaVersion = Self.currentSchemaVersion
         self.exportedAt = exportedAt
         self.data = data
+        self.media = media
     }
+}
+
+public struct BackupMedia: Codable, Hashable, Sendable {
+    public var path: String
+    public var data: Data
+    public init(path: String, data: Data) { self.path = path; self.data = data }
+}
+
+public enum BackupMediaPath {
+    public static func isSafe(_ path: String) -> Bool { true }
 }
 
 public enum BackupEntity: String, Codable, Sendable, CaseIterable {
@@ -39,6 +52,10 @@ public enum BackupIssue: Hashable, Sendable {
     case duplicateSourceID(String)
     case invalidActivity(UUID)
     case inconsistentPending(UUID)
+    case invalidMediaPath(String)
+    case duplicateMediaPath(String)
+    case missingMedia(gearID: UUID, path: String)
+    case unreferencedMedia(String)
 
     /// Warnungen blockieren den Import nicht (z. B. Montage vor Kaufdatum, I-03).
     public var isWarning: Bool {
@@ -179,6 +196,16 @@ public struct BackupPreview: Equatable, Sendable {
     public var conflicts: [BackupConflict]
     /// Fehler und Warnungen des Backups.
     public var issues: [BackupIssue]
+    public var summary: [BackupEntity: BackupEntityChange] = [:]
+    public var hasConflicts: Bool { false }
+}
+
+public struct BackupEntityChange: Equatable, Sendable {
+    public var new: Int
+    public var unchanged: Int
+    public var conflicting: Int
+    public var total: Int { 0 }
+    public init(new: Int, unchanged: Int, conflicting: Int) { self.new = new; self.unchanged = unchanged; self.conflicting = conflicting }
 }
 
 public enum MergePreference: Sendable { case backup, existing }
@@ -234,6 +261,8 @@ public enum BackupRestore {
         }
         return result
     }
+
+    public static func media(of document: BackupDocument, for result: GearDataset) -> [BackupMedia] { [] }
 
     private static func merged(_ e: GearDataset, _ b: GearDataset, prefer: MergePreference) -> GearDataset {
         func union<T: Identifiable>(_ mine: [T], _ backup: [T]) -> [T] where T.ID == UUID {

@@ -24,10 +24,12 @@ public struct GearItem: Identifiable, Hashable, Codable, Sendable {
     /// Kategorie/Unterkategorie aus dem Katalog (M1a); Standard „Sonstige“, damit bestehende Aufrufe gültig bleiben.
     public var category: SportCategory
     public var subtype: SportSubtype?
+    /// Foto als relativer Pfad unter Application Support/Media (ARCHITEKTUR 3.2); `nil` = kein Foto (M8).
+    public var photoPath: String?
 
     public init(id: UUID = UUID(), name: String, purchaseDate: Date? = nil,
                 status: GearStatus = .active, createdAt: Date = Date(timeIntervalSince1970: 0),
-                category: SportCategory = .other, subtype: SportSubtype? = nil) {
+                category: SportCategory = .other, subtype: SportSubtype? = nil, photoPath: String? = nil) {
         self.id = id
         self.name = name
         self.purchaseDate = purchaseDate
@@ -35,6 +37,7 @@ public struct GearItem: Identifiable, Hashable, Codable, Sendable {
         self.createdAt = createdAt
         self.category = category
         self.subtype = subtype
+        self.photoPath = photoPath
     }
 }
 

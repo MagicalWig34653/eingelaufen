@@ -5,7 +5,7 @@ import Foundation
 private let bike = id(1), chainOld = id(2), chainNew = id(3), shoes = id(4), helmet = id(5)
 
 /// Realistischer Bestand: Kettenwechsel mit Chronologie, Wartung, Regeln, Preset, Posteingang, manuelle und importierte Aktivität.
-private func richDataset() -> GearDataset {
+func richDataset() -> GearDataset {
     var d = GearDataset()
     d.gear = [
         GearItem(id: bike, name: "Rennrad", purchaseDate: day(-100), createdAt: day(-100), category: .cycling, subtype: .roadBike),
