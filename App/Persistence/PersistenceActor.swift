@@ -17,6 +17,9 @@ enum PersistenceError: Error, Equatable {
     case maintenance(MaintenanceEntryError)
     case invalidRule
     case ruleNotFound(UUID)
+    case pendingNotFound
+    case activityNotFound
+    case preset(PresetError)
 }
 
 /// Entscheidung des Nutzers zu Apple Health (SPEC S01 Schritt 2). „Verbunden“ heißt: eingerichtet, nicht „erlaubt“
@@ -63,6 +66,16 @@ enum GearCommand: Sendable {
     // M3: Apple Health
     /// Verbindung einrichten oder Zeitraum ändern.
     case connectHealth(ImportWindow)
+    // M4: Zuordnung und Posteingang
+    /// Eintrag im Posteingang bearbeiten (SPEC S05). `remember` legt nach Erfolg eine Regel „für ähnliche Aktivitäten“ an.
+    case resolvePending(id: UUID, action: InboxAction, remember: Bool)
+    /// Korrektur aus dem Verlauf (SPEC 6.3): Ausrüstung einer Aktivität auf genau diese Auswahl setzen.
+    case setActivityGear(activity: UUID, gear: [UUID])
+    case createPreset(name: String, sportTypes: [SportType], members: [UUID])
+    case removePreset(UUID)
+    case setDefaultPreset(sport: SportType, preset: UUID?)
+    case setAssignmentRuleEnabled(id: UUID, enabled: Bool)
+    case removeAssignmentRule(UUID)
 }
 
 /// Wartungseingabe (SPEC S07): Datum = jetzt, wenn `performedAt == nil`; alles Weitere optional.
@@ -91,6 +104,8 @@ struct AppSettingsValue: Sendable, Equatable {
 
 enum OutboxKind: String, Sendable, CaseIterable {
     case gearChanged, activityChanged, onboardingCompleted, dataReplaced, maintenanceChanged
+    /// M4: Posteingangs-Eintrag geändert (für Benachrichtigungen, M6); Zuordnungsregeln/Presets geändert.
+    case pendingChanged, rulesChanged
 }
 
 struct OutboxItem: Sendable, Equatable, Identifiable {
@@ -232,6 +247,8 @@ actor PersistenceActor {
         case .setMaintenanceRule(let rule): try setRule(rule, now: now)
         case .removeMaintenanceRule(let id): try removeRule(id, now: now)
         case .connectHealth(let window): try connectHealth(window, now: now)
+        case .resolvePending, .setActivityGear, .createPreset, .removePreset, .setDefaultPreset,
+             .setAssignmentRuleEnabled, .removeAssignmentRule: CommandOutcome()   // ROT: noch nicht umgesetzt
         }
     }
 

@@ -18,7 +18,7 @@ if [ "$what" = all ] || [ "$what" = app ] || [ "$what" = ui ]; then
     *) only="" ;;
   esac
   $SPARSAM xcodebuild test -project Eingelaufen.xcodeproj -scheme Eingelaufen \
-    -destination "$DEST" -derivedDataPath build/DerivedData $only \
+    -destination "$DEST" -derivedDataPath build/DerivedData -collect-test-diagnostics never $only \
     CODE_SIGNING_ALLOWED=NO 2>&1 | sed 's/\x1b\[[0-9;]*m//g' | grep -E "error:|✘|Test run with|Executed [0-9]+ tests|TEST (SUCCEEDED|FAILED)|Suite .* (passed|failed)" | cut -c1-220 | sort -u
   exit "${PIPESTATUS[0]}"
 fi

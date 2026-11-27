@@ -89,6 +89,17 @@ final class AppModel {
         }
     }
 
+    static func message(for reason: PresetError) -> String {
+        switch reason {
+        case .emptyName: "Bitte gib dem Set einen Namen."
+        case .noMembers: "Wähle mindestens ein Ausrüstungsteil."
+        case .noSportTypes: "Wähle mindestens eine Sportart."
+        case .unknownGear: "Diese Ausrüstung gibt es nicht mehr."
+        case .presetNotFound: "Dieses Set gibt es nicht mehr."
+        case .presetDoesNotCover: "Das Set gehört nicht zu dieser Sportart."
+        }
+    }
+
     static func message(for error: Error) -> String {
         switch error as? PersistenceError {
         case .emptyName: "Bitte gib einen Namen ein."
@@ -101,6 +112,9 @@ final class AppModel {
         case .maintenance(let reason): Self.message(for: reason)
         case .invalidRule: "Das Intervall muss größer als 0 sein, die Vorwarnung darf es nicht überschreiten."
         case .ruleNotFound: "Diese Regel gibt es nicht mehr."
+        case .pendingNotFound: "Diese Zuordnung gibt es nicht mehr."
+        case .activityNotFound: "Diese Aktivität gibt es nicht mehr."
+        case .preset(let reason): Self.message(for: reason)
         case nil: "Das hat nicht geklappt. Bitte versuche es noch einmal."
         }
     }
