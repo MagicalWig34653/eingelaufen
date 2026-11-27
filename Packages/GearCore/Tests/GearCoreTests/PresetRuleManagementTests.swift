@@ -69,7 +69,7 @@ struct PresetPlannerTests {
         let created = try PresetPlanner.setDefault(id(701), for: cycling, in: d, profileID: id(950))
         #expect(created.id == id(950) && created.defaultPresetID == id(701))
 
-        #expect(throws: PresetError.presetDoesNotCover(cycling)) {
+        #expect(throws: PresetError.presetDoesNotCover(run)) {
             _ = try PresetPlanner.setDefault(id(701), for: run, in: d, profileID: id(951))
         }
         #expect(throws: PresetError.presetNotFound(id(555))) {
