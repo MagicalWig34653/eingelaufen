@@ -65,7 +65,12 @@ public enum NotificationAction: String, CaseIterable, Sendable {
 public enum NotificationCatalog {
     /// Feste Reihenfolge: bei wenig Platz zeigt das System nur die ersten zwei (PLATTFORM F-10).
     public static func actions(for category: NotificationCategory) -> [NotificationAction] {
-        []
+        switch category {
+        case .proposal: [.confirm, .choose, .later]
+        case .choose: [.choose, .later]
+        case .inboxSummary, .maintenanceSummary: []
+        case .maintenance: [.checkMaintenance]
+        }
     }
 }
 
@@ -85,9 +90,24 @@ public struct NotificationPayload: Hashable, Sendable {
         self.count = count
     }
 
-    public var userInfo: [String: String] { [:] }
+    public var userInfo: [String: String] {
+        var info: [String: String] = [:]
+        info["pendingID"] = pendingID?.uuidString
+        info["proposalRevision"] = proposalRevision.map(String.init)
+        info["activityID"] = activityID?.uuidString
+        info["gearID"] = gearID?.uuidString
+        info["count"] = count.map(String.init)
+        return info
+    }
 
-    public init(userInfo: [String: String]) {}
+    /// Unlesbare Werte werden `nil` (nie geraten).
+    public init(userInfo: [String: String]) {
+        pendingID = userInfo["pendingID"].flatMap(UUID.init(uuidString:))
+        proposalRevision = userInfo["proposalRevision"].flatMap { Int($0) }
+        activityID = userInfo["activityID"].flatMap(UUID.init(uuidString:))
+        gearID = userInfo["gearID"].flatMap(UUID.init(uuidString:))
+        count = userInfo["count"].flatMap { Int($0) }
+    }
 }
 
 public struct PlannedNotification: Hashable, Sendable {
@@ -139,26 +159,108 @@ public enum NotificationIdentifier {
     public static func pending(_ id: UUID) -> String { "pending.\(id.uuidString)" }
     public static func maintenance(_ id: UUID) -> String { "maintenance.\(id.uuidString)" }
     /// Alle Identifier, die die App selbst vergibt (fremde bleiben unberührt).
-    public static func isOwn(_ identifier: String) -> Bool { false }
+    public static func isOwn(_ identifier: String) -> Bool { isInbox(identifier) || isMaintenance(identifier) }
+    static func isInbox(_ identifier: String) -> Bool { identifier == inboxSummary || identifier.hasPrefix("pending.") }
+    static func isMaintenance(_ identifier: String) -> Bool { identifier.hasPrefix("maintenance.") }
 }
 
 public enum NotificationPlanner {
     public static func plan(open: [PendingAssignment], maintenance: [MaintenanceHint], sent: [SentNotification],
                             existing: Set<String>, preferences: NotificationPreferences, authorized: Bool,
                             now: Date, calendar: Calendar) -> NotificationPlan {
-        NotificationPlan()
+        let own = existing.filter(NotificationIdentifier.isOwn)
+        guard authorized, preferences.level != .off else { return NotificationPlan(remove: own.sorted()) }
+        let deliverAt = preferences.quietHours?.deliveryDate(for: now, calendar: calendar) ?? now
+        var plan = NotificationPlan()
+        planInbox(open, sent: sent, existing: own, deliverAt: deliverAt, now: now, into: &plan)
+        if preferences.level == .assignmentAndMaintenance {
+            planMaintenance(maintenance, sent: sent, existing: own, deliverAt: deliverAt, now: now, into: &plan)
+        } else {
+            plan.remove += own.filter(NotificationIdentifier.isMaintenance).sorted()
+        }
+        return plan
     }
+
+    /// Offene Einträge mit etwas zum Bestätigen oder Wählen; „Ohne Ausrüstung“ stört nie (SPEC 6.2).
+    private static func notifiable(_ p: PendingAssignment) -> Bool {
+        !p.state.isFinal && (!p.proposedGearIDs.isEmpty || !p.candidateGearIDs.isEmpty)
+    }
+
+    private static func planInbox(_ open: [PendingAssignment], sent: [SentNotification], existing: Set<String>,
+                                  deliverAt: Date, now: Date, into plan: inout NotificationPlan) {
+        let eligible = open.filter(notifiable).sorted { $0.id.uuidString < $1.id.uuidString }
+        let alreadySent = Set(sent.map { Key(id: $0.relatedID, revision: $0.revision) })
+        let fresh = eligible.filter { !alreadySent.contains(Key(id: $0.id, revision: $0.proposalRevision)) }
+        let eligibleIdents = Set(eligible.map { NotificationIdentifier.pending($0.id) })
+        let summary = eligible.count >= 2
+
+        var remove = existing.filter { $0.hasPrefix("pending.") && (!eligibleIdents.contains($0) || (summary && !fresh.isEmpty)) }
+        if !summary, existing.contains(NotificationIdentifier.inboxSummary) { remove.insert(NotificationIdentifier.inboxSummary) }
+        plan.remove += remove.sorted()
+        guard !fresh.isEmpty else { return }
+
+        if summary {
+            plan.schedule.append(PlannedNotification(identifier: NotificationIdentifier.inboxSummary, category: .inboxSummary,
+                                                     threadID: NotificationIdentifier.inboxThread, deliverAt: deliverAt,
+                                                     payload: NotificationPayload(count: eligible.count)))
+            plan.records += fresh.map { SentNotification(relatedID: $0.id, revision: $0.proposalRevision,
+                                                          identifier: NotificationIdentifier.inboxSummary, sentAt: now) }
+        } else if let p = fresh.first {
+            let ident = NotificationIdentifier.pending(p.id)
+            let category: NotificationCategory = p.state != .unresolved && !p.proposedGearIDs.isEmpty ? .proposal : .choose
+            plan.schedule.append(PlannedNotification(identifier: ident, category: category, threadID: NotificationIdentifier.inboxThread,
+                                                     deliverAt: deliverAt,
+                                                     payload: NotificationPayload(pendingID: p.id, proposalRevision: p.proposalRevision,
+                                                                                  activityID: p.activityID)))
+            plan.records.append(SentNotification(relatedID: p.id, revision: p.proposalRevision, identifier: ident, sentAt: now))
+        }
+    }
+
+    private static func planMaintenance(_ hints: [MaintenanceHint], sent: [SentNotification], existing: Set<String>,
+                                        deliverAt: Date, now: Date, into plan: inout NotificationPlan) {
+        func key(_ h: MaintenanceHint) -> UUID { h.ruleID ?? h.gearID }
+        let due = hints.filter { $0.state == .due }.sorted { key($0).uuidString < key($1).uuidString }
+        let lastSent = Dictionary(sent.map { ($0.relatedID, $0.sentAt) }, uniquingKeysWith: max)
+        let fresh = due.filter { h in
+            lastSent[key(h)].map { now.timeIntervalSince($0) >= NotificationPreferences.maintenanceCooldown } ?? true
+        }
+        let dueIdents = Set(due.map { NotificationIdentifier.maintenance(key($0)) })
+        let summary = fresh.count >= 2
+        var remove = existing.filter { NotificationIdentifier.isMaintenance($0) && $0 != NotificationIdentifier.maintenanceSummary
+                                       && (!dueIdents.contains($0) || summary) }
+        if due.count < 2, existing.contains(NotificationIdentifier.maintenanceSummary) { remove.insert(NotificationIdentifier.maintenanceSummary) }
+        plan.remove += remove.sorted()
+        guard !fresh.isEmpty else { return }
+
+        let ident = summary ? NotificationIdentifier.maintenanceSummary : NotificationIdentifier.maintenance(key(fresh[0]))
+        let payload = summary ? NotificationPayload(count: due.count) : NotificationPayload(gearID: fresh[0].gearID)
+        plan.schedule.append(PlannedNotification(identifier: ident, category: summary ? .maintenanceSummary : .maintenance,
+                                                 threadID: NotificationIdentifier.maintenanceThread, deliverAt: deliverAt, payload: payload))
+        plan.records += fresh.map { SentNotification(relatedID: key($0), revision: $0.state.rawValue, identifier: ident, sentAt: now) }
+    }
+
+    private struct Key: Hashable { var id: UUID; var revision: Int }
 
     /// Fällige Wartung nur aus aktivierten Regeln (SPEC 7.4), Vorwarnung zählt nicht.
     public static func dueMaintenance(rules: [MaintenanceRule], events: [MaintenanceEvent], entries: [UsageLedgerEntry],
                                       installations: [Installation], gear: [GearItem], now: Date) -> [MaintenanceHint] {
-        []
+        let gearIDs = Set(rules.filter(\.enabled).map(\.gearID))
+        let reports = gear.filter { gearIDs.contains($0.id) }.map {
+            MaintenanceEvaluator.report(gearID: $0.id, rules: rules, events: events, entries: entries,
+                                        installations: installations, gear: gear, now: now)
+        }
+        return MaintenanceEvaluator.topHints(reports, limit: .max).filter { $0.state == .due }
     }
 
     /// Kontextbezogene Erstanfrage (SPEC 9, ARCHITEKTUR 6.2): erst bei erster offener Zuordnung oder erster Wartungsregel.
     public static func shouldRequestAuthorization(undetermined: Bool, level: NotificationLevel, openAssignments: Int,
                                                   enabledMaintenanceRules: Int) -> Bool {
-        false
+        guard undetermined else { return false }
+        switch level {
+        case .off: return false
+        case .assignmentOnly: return openAssignments > 0
+        case .assignmentAndMaintenance: return openAssignments > 0 || enabledMaintenanceRules > 0
+        }
     }
 }
 
@@ -174,6 +276,23 @@ public enum NotificationResponse: Equatable, Sendable {
     public static let dismissActionIdentifier = "com.apple.UNNotificationDismissActionIdentifier"
 
     public static func effect(actionIdentifier: String, categoryIdentifier: String, userInfo: [String: String]) -> NotificationResponse {
-        .none
+        let payload = NotificationPayload(userInfo: userInfo)
+        switch NotificationAction(rawValue: actionIdentifier) {
+        case .confirm:
+            guard let id = payload.pendingID, let revision = payload.proposalRevision else { return .none }
+            return .resolve(pendingID: id, action: .confirm(proposalRevision: revision))
+        case .later:
+            guard let id = payload.pendingID else { return .none }
+            return .resolve(pendingID: id, action: .later)
+        case .choose:
+            return .openInbox(pendingID: payload.pendingID)
+        case .checkMaintenance:
+            return payload.gearID.map { .openMaintenance(gearID: $0) } ?? .openInbox(pendingID: nil)
+        case nil:
+            guard actionIdentifier == defaultActionIdentifier else { return .none }
+            if let gear = payload.gearID { return .openMaintenance(gearID: gear) }
+            if categoryIdentifier == NotificationCategory.maintenanceSummary.rawValue { return .none }
+            return .openInbox(pendingID: payload.pendingID)
+        }
     }
 }

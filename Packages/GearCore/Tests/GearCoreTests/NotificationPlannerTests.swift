@@ -230,12 +230,15 @@ struct NotificationPlannerTests {
     }
 
     @Test func onlyEnabledRulesProduceDueMaintenance() {
-        let gear = GearItem(id: id(3), name: "Rad", createdAt: day(0), category: .cycling)
+        let gear = [GearItem(id: id(3), name: "Rad", createdAt: day(0), category: .cycling),
+                    GearItem(id: id(4), name: "Rad 2", createdAt: day(0), category: .cycling)]
         let on = MaintenanceRule(id: id(70), gearID: id(3), kind: .inspected, metric: .calendarAge, intervalValue: 10)
-        var off = MaintenanceRule(id: id(71), gearID: id(3), kind: .lubricated, metric: .calendarAge, intervalValue: 10)
+        var off = MaintenanceRule(id: id(71), gearID: id(4), kind: .inspected, metric: .calendarAge, intervalValue: 10)
         off.enabled = false
-        let hints = NotificationPlanner.dueMaintenance(rules: [on, off], events: [], entries: [], installations: [],
-                                                       gear: [gear], now: day(30))
+        let events = [MaintenanceEvent(gearID: id(3), kind: .inspected, performedAt: day(5)),
+                      MaintenanceEvent(gearID: id(4), kind: .inspected, performedAt: day(5))]
+        let hints = NotificationPlanner.dueMaintenance(rules: [on, off], events: events, entries: [], installations: [],
+                                                       gear: gear, now: day(30))
         #expect(hints.map(\.ruleID) == [id(70)])
         #expect(hints.allSatisfy { $0.state == .due })
     }
