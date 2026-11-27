@@ -56,10 +56,10 @@ enum TestMigrationPlan: SchemaMigrationPlan {
         #expect(items[0].colorName == nil)
     }
 
-    @Test func productionPlanStartsAtV1AndOpensAnOnDiskStoreTwice() throws {
+    @Test func productionPlanHasV1AndV2AndOpensAnOnDiskStoreTwice() throws {
         let url = FileManager.default.temporaryDirectory.appendingPathComponent("prod-\(UUID().uuidString).store")
         defer { for suffix in ["", "-shm", "-wal"] { try? FileManager.default.removeItem(atPath: url.path + suffix) } }
-        #expect(GearMigrationPlan.schemas.count == 1)
+        #expect(GearMigrationPlan.schemas.count == 2)
         _ = try Stores.makeContainer(inMemory: false, url: url)
         _ = try Stores.makeContainer(inMemory: false, url: url)
     }

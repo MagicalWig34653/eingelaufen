@@ -505,7 +505,7 @@ typealias MaintenanceEventEntity = SchemaV1.MaintenanceEventEntity
 typealias MaintenanceRuleEntity = SchemaV1.MaintenanceRuleEntity
 typealias AssignmentRuleEntity = SchemaV1.AssignmentRuleEntity
 typealias PendingEntity = SchemaV1.PendingEntity
-typealias AppSettingsEntity = SchemaV1.AppSettingsEntity
+typealias AppSettingsEntity = SchemaV2.AppSettingsEntity
 typealias ImportCursorEntity = SchemaV1.ImportCursorEntity
 typealias NotificationRecordEntity = SchemaV1.NotificationRecordEntity
 typealias LedgerEntryEntity = SchemaV1.LedgerEntryEntity
@@ -513,15 +513,16 @@ typealias GearUsageSummaryEntity = SchemaV1.GearUsageSummaryEntity
 typealias OutboxEntity = SchemaV1.OutboxEntity
 
 enum GearMigrationPlan: SchemaMigrationPlan {
-    static var schemas: [any VersionedSchema.Type] { [SchemaV1.self] }
-    /// Noch keine Stufen: V1 ist das erste Schema. Die Testmigration V1 → V1_1 liegt im Testziel (SPEC 14.2).
-    static var stages: [MigrationStage] { [] }
+    static var schemas: [any VersionedSchema.Type] { [SchemaV1.self, SchemaV2.self] }
+    /// V1 → V2 (M6): Einstellungen für Benachrichtigungen, nur neue Attribute mit Vorgabe (leichtgewichtig).
+    /// Die Testmigration V1 → V1_1 liegt im Testziel (SPEC 14.2).
+    static var stages: [MigrationStage] { [.lightweight(fromVersion: SchemaV1.self, toVersion: SchemaV2.self)] }
 }
 
 enum Stores {
     /// `url == nil` und `inMemory == false`: Standardablage der App (Application Support).
     static func makeContainer(inMemory: Bool, url: URL? = nil) throws -> ModelContainer {
-        let schema = Schema(versionedSchema: SchemaV1.self)
+        let schema = Schema(versionedSchema: SchemaV2.self)
         let configuration: ModelConfiguration
         if inMemory {
             configuration = ModelConfiguration("Eingelaufen", schema: schema, isStoredInMemoryOnly: true)

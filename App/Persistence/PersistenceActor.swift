@@ -76,6 +76,9 @@ enum GearCommand: Sendable {
     case setDefaultPreset(sport: SportType, preset: UUID?)
     case setAssignmentRuleEnabled(id: UUID, enabled: Bool)
     case removeAssignmentRule(UUID)
+    // M6: Benachrichtigungen
+    /// Stufe und Ruhezeiten (SPEC 7.2).
+    case setNotificationPreferences(NotificationPreferences)
 }
 
 /// Wartungseingabe (SPEC S07): Datum = jetzt, wenn `performedAt == nil`; alles Weitere optional.
@@ -106,6 +109,8 @@ enum OutboxKind: String, Sendable, CaseIterable {
     case gearChanged, activityChanged, onboardingCompleted, dataReplaced, maintenanceChanged
     /// M4: Posteingangs-Eintrag geändert (für Benachrichtigungen, M6); Zuordnungsregeln/Presets geändert.
     case pendingChanged, rulesChanged
+    /// M6: Stufe oder Ruhezeiten geändert.
+    case notificationSettingsChanged
 }
 
 struct OutboxItem: Sendable, Equatable, Identifiable {
@@ -254,6 +259,7 @@ actor PersistenceActor {
         case .setDefaultPreset(let sport, let preset): try setDefaultPreset(sport, preset, now: now)
         case .setAssignmentRuleEnabled(let id, let enabled): try setRuleEnabled(id, enabled, now: now)
         case .removeAssignmentRule(let id): try removeAssignmentRule(id, now: now)
+        case .setNotificationPreferences(let prefs): try setNotificationPreferences(prefs, now: now)
         }
     }
 
@@ -343,7 +349,7 @@ actor PersistenceActor {
         return CommandOutcome()
     }
 
-    private func settingsRow(now: Date) throws -> AppSettingsEntity {
+    func settingsRow(now: Date) throws -> AppSettingsEntity {
         if let existing = try fetchAll(AppSettingsEntity.self).first { return existing }
         let settings = AppSettingsEntity()
         settings.createdAt = now
