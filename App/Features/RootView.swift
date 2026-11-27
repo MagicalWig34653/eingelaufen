@@ -26,13 +26,15 @@ struct RootView: View {
 enum AppTab: Hashable { case overview, gear, history }
 
 struct MainTabs: View {
+    @Environment(AppModel.self) private var model
     @State private var selection: AppTab = .overview
     @State private var showSettings = false
+    @State private var overviewPath = NavigationPath()
 
     var body: some View {
         TabView(selection: $selection) {
             Tab("Übersicht", systemImage: "square.grid.2x2", value: AppTab.overview) {
-                NavigationStack {
+                NavigationStack(path: $overviewPath) {
                     OverviewView(showSettings: $showSettings)
                         .navigationDestination(for: GearRoute.self) { GearDetailView(gearID: $0.id) }
                         .navigationDestination(for: InboxRoute.self) { _ in InboxView() }
@@ -50,6 +52,19 @@ struct MainTabs: View {
             }
         }
         .sheet(isPresented: $showSettings) { SettingsView() }
+        // Deep Link aus einer Benachrichtigung (SPEC 7.2 „Auswählen“, 7.4 Wartung): Übersicht › Posteingang bzw. Gegenstand.
+        .onChange(of: model.notificationRoute) { _, route in
+            guard let route else { return }
+            showSettings = false
+            selection = .overview
+            var path = NavigationPath()
+            switch route {
+            case .inbox: path.append(InboxRoute())
+            case .gear(let id): path.append(GearRoute(id: id))
+            }
+            overviewPath = path
+            model.notificationRoute = nil
+        }
     }
 }
 

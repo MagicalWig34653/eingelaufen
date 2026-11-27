@@ -1,7 +1,7 @@
 import SwiftData
 import SwiftUI
 
-/// Einstellungen (SPEC S08), Stand M3: Apple Health mit Import-Status, Datenschutz-Hinweis, Über. Weiteres bis M8.
+/// Einstellungen (SPEC S08), Stand M6: Apple Health mit Import-Status, Zuordnung, Mitteilungen, Datenschutz-Hinweis, Über. Weiteres bis M8.
 struct SettingsView: View {
     @Environment(\.dismiss) private var dismiss
 
@@ -15,6 +15,7 @@ struct SettingsView: View {
             Form {
                 HealthSettingsSection()
                 AssignmentSettingsSection()
+                NotificationSettingsSection()
                 Section("Datenschutz") {
                     Text("Alle Daten bleiben auf diesem Gerät. Kein Konto, kein Server, kein Tracking.")
                 }

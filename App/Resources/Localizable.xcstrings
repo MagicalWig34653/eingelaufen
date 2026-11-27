@@ -1400,6 +1400,160 @@
           }
         }
       }
+    },
+    "notification.action.confirm": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vorschlag übernehmen"
+          }
+        }
+      }
+    },
+    "notification.action.choose": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Andere auswählen"
+          }
+        }
+      }
+    },
+    "notification.action.chooseGear": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ausrüstung wählen"
+          }
+        }
+      }
+    },
+    "notification.action.later": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Später"
+          }
+        }
+      }
+    },
+    "notification.action.check": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Prüfen"
+          }
+        }
+      }
+    },
+    "notification.proposal.title": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ausrüstung bestätigen"
+          }
+        }
+      }
+    },
+    "notification.proposal.body": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ am %2$@: %3$@?"
+          }
+        }
+      }
+    },
+    "notification.choose.title": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ausrüstung wählen"
+          }
+        }
+      }
+    },
+    "notification.choose.body": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ am %2$@: Welche Ausrüstung war dabei?"
+          }
+        }
+      }
+    },
+    "notification.inboxSummary.title": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Offene Zuordnungen"
+          }
+        }
+      }
+    },
+    "notification.inboxSummary.body": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%d Aktivitäten warten auf deine Ausrüstung."
+          }
+        }
+      }
+    },
+    "notification.maintenance.title": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wartung prüfen"
+          }
+        }
+      }
+    },
+    "notification.maintenance.body": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@: Intervall erreicht. Bitte prüfen."
+          }
+        }
+      }
+    },
+    "notification.maintenanceSummary.body": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%d Ausrüstungsteile bitte prüfen."
+          }
+        }
+      }
     }
   },
   "version": "1.0"
