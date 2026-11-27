@@ -29,7 +29,27 @@ extension XCTestCase {
     }
 }
 
+extension XCTestCase {
+    /// M6: wartet auf dem Home-Bildschirm auf die Mitteilung; ein Systemdialog „Erlauben“ (erste Anfrage im Simulator kommt
+    /// spät) wird unterwegs bestätigt. Liefert die Mitteilung oder `nil`.
+    @MainActor
+    func waitForBanner(containing text: String, on springboard: XCUIApplication, timeout: TimeInterval = 60) -> XCUIElement? {
+        let allow = springboard.alerts.buttons.matching(NSPredicate(format: "label IN %@", ["Erlauben", "Allow"])).firstMatch
+        let banner = springboard.descendants(matching: .any).matching(NSPredicate(format: "label CONTAINS %@", text)).firstMatch
+        let deadline = Date().addingTimeInterval(timeout)
+        while Date() < deadline {
+            if allow.exists { allow.tap() }
+            if banner.exists { return banner }
+            Thread.sleep(forTimeInterval: 1)
+        }
+        return nil
+    }
+}
+
 extension XCUIApplication {
+    /// Erstes Element mit dieser Kennung (Beschriftungen mit Symbol liefern mehrere Treffer).
+    func first(id: String) -> XCUIElement { descendants(matching: .any).matching(identifier: id).firstMatch }
+
     /// Irgendein Element, dessen Beschriftung den Text enthält (zusammengefasste Zeilen tragen einen Gesamttext).
     func element(labelContaining text: String) -> XCUIElement {
         descendants(matching: .any).matching(NSPredicate(format: "label CONTAINS %@", text)).firstMatch

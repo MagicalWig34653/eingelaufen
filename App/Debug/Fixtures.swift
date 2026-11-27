@@ -21,6 +21,9 @@ enum Fixtures {
         case "inbox":
             try? await persistence.load(inbox)
             _ = try? await persistence.apply(.completeOnboarding(OnboardingChoice(categories: [.cycling], health: .later)), now: at(day: 0))
+        case "inboxOne":
+            try? await persistence.load(inboxOne)
+            _ = try? await persistence.apply(.completeOnboarding(OnboardingChoice(categories: [.cycling], health: .later)), now: at(day: 0))
         case "maintenance":
             try? await persistence.load(maintenance)
             _ = try? await persistence.apply(.completeOnboarding(OnboardingChoice(categories: [.cycling], health: .later)), now: at(day: 0))
@@ -81,6 +84,15 @@ enum Fixtures {
             PendingAssignment(activityID: unclear.id, state: .unresolved, candidateGearIDs: [canyon.id, cube.id],
                               reason: .multipleCandidates, confidence: .none, createdAt: at(day: 6)),
         ]
+        return d
+    }
+
+    /// M6: wie „inbox“, aber nur die Fahrt an Tag 8 mit Vorschlag Canyon ist offen (genau eine Einzelmeldung, keine Sammelmeldung).
+    static var inboxOne: GearDataset {
+        var d = inbox
+        let unclear = Set(d.pendings.filter { $0.state == .unresolved }.map(\.activityID))
+        d.activities.removeAll { unclear.contains($0.id) }
+        d.pendings.removeAll { unclear.contains($0.activityID) }
         return d
     }
 

@@ -63,20 +63,25 @@ final class AppDelegate: NSObject, UIApplicationDelegate {
 
 extension AppDelegate: UNUserNotificationCenterDelegate {
     /// Aktion oder Tippen: im Hintergrund (Bestätigen, Später) oder im Vordergrund (Auswählen, Prüfen).
-    nonisolated func userNotificationCenter(_ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse) async {
+    /// Bewusst die Completion-Handler-Variante: UIKit verlangt den Aufruf auf dem Hauptthread; die `async`-Variante
+    /// rief ihn von einem Hintergrundthread auf und die App stürzte ab (Befund 27.11., `NotificationUITests`).
+    nonisolated func userNotificationCenter(_ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse,
+                                            withCompletionHandler completionHandler: @escaping @Sendable () -> Void) {
         let content = response.notification.request.content
         let action = response.actionIdentifier
         let category = content.categoryIdentifier
         var info: [String: String] = [:]
         for (key, value) in content.userInfo { if let k = key as? String, let v = value as? String { info[k] = v } }
-        let model = await MainActor.run { AppEnvironment.model }
-        await model.handleNotification(actionIdentifier: action, categoryIdentifier: category, userInfo: info)
+        Task { @MainActor [info] in
+            await AppEnvironment.model.handleNotification(actionIdentifier: action, categoryIdentifier: category, userInfo: info)
+            completionHandler()
+        }
     }
 
     /// Auch bei offener App sichtbar (der Posteingang bleibt die Wahrheit).
-    nonisolated func userNotificationCenter(_ center: UNUserNotificationCenter,
-                                            willPresent notification: UNNotification) async -> UNNotificationPresentationOptions {
-        [.banner, .list, .sound]
+    nonisolated func userNotificationCenter(_ center: UNUserNotificationCenter, willPresent notification: UNNotification,
+                                            withCompletionHandler completionHandler: @escaping @Sendable (UNNotificationPresentationOptions) -> Void) {
+        completionHandler([.banner, .list, .sound])
     }
 }
 
