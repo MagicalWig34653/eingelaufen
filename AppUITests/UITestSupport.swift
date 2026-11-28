@@ -129,7 +129,8 @@ extension XCTestCase {
     }
 
     /// Fake-Trainingsquelle (Debug, Szenarien `slow`/`slow-error`): Der Abgleich läuft, bis der Test ihn freigibt.
-    /// Darwin-Mitteilung, weil Test und App getrennte Prozesse im selben Simulator sind.
+    /// Darwin-Mitteilung, weil Test und App getrennte Prozesse im selben Simulator sind
+    /// (Name wie `DebugHealthSource.releaseName`).
     func releaseHealthSync() {
         CFNotificationCenterPostNotification(CFNotificationCenterGetDarwinNotifyCenter(),
                                              CFNotificationName("de.linolaske.eingelaufen.uitest.releaseHealth" as CFString),

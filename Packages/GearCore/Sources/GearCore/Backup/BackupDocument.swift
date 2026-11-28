@@ -287,7 +287,8 @@ public enum BackupRestore {
         compare(.maintenanceEvent, e.maintenanceEvents, b.maintenanceEvents)
         compare(.maintenanceRule, e.maintenanceRules, b.maintenanceRules)
         compare(.assignmentRule, e.assignmentRules, b.assignmentRules); compare(.pending, e.pendings, b.pendings)
-        return BackupPreview(counts: counts, conflicts: conflicts, issues: BackupValidator.validate(document), summary: summary)
+        return BackupPreview(counts: counts, conflicts: conflicts, issues: BackupValidator.validate(document), summary: summary,
+                             replaceDiscardsExisting: hasUserData(e))
     }
 
     /// Eigener Bestand = alles außer den Sportarten, die das Onboarding anlegt (sonst fragte jede frische Installation nach).

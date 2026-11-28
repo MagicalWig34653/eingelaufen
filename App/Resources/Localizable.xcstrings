@@ -2134,6 +2134,26 @@
           }
         }
       }
+    },
+    "Bestand ersetzen?": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bestand ersetzen?"
+          }
+        }
+      }
+    },
+    "Dein aktueller Bestand wird gelöscht und durch das Backup ersetzt. Das lässt sich nicht rückgängig machen. Exportiere vorher ein Backup, wenn du ihn behalten willst.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dein aktueller Bestand wird gelöscht und durch das Backup ersetzt. Das lässt sich nicht rückgängig machen. Exportiere vorher ein Backup, wenn du ihn behalten willst."
+          }
+        }
+      }
     }
   },
   "version": "1.0"

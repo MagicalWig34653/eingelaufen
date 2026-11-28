@@ -97,6 +97,8 @@ struct ImportPreviewView: View {
     @Environment(AppModel.self) private var model
     @Environment(\.dismiss) private var dismiss
     @State private var choice = Choice.replace
+    /// Karte F33E735D: Ersetzen verwirft den vorhandenen Bestand, vorher fragt die App nach.
+    @State private var confirmReplace = false
 
     enum Choice: Hashable {
         case replace, mergeBackup, mergeExisting
@@ -167,16 +169,29 @@ struct ImportPreviewView: View {
             .navigationTitle("Vorschau")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) { Button("Abbrechen") { dismiss() } }
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Abbrechen") { dismiss() }.accessibilityIdentifier("previewCancel")
+                }
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Importieren") {
-                        Task { if await model.restore(candidate, mode: choice.mode) { dismiss() } }
+                        if choice == .replace && preview.replaceDiscardsExisting { confirmReplace = true } else { restore() }
                     }
                     .disabled(!errors.isEmpty)
                     .accessibilityIdentifier("restoreConfirm")
                 }
             }
+            .confirmationDialog("Bestand ersetzen?", isPresented: $confirmReplace, titleVisibility: .visible) {
+                Button("Bestand ersetzen", role: .destructive) { restore() }
+                    .accessibilityIdentifier("restoreReplaceConfirm")
+                Button("Abbrechen", role: .cancel) {}
+            } message: {
+                Text("Dein aktueller Bestand wird gelöscht und durch das Backup ersetzt. Das lässt sich nicht rückgängig machen. Exportiere vorher ein Backup, wenn du ihn behalten willst.")
+            }
         }
+    }
+
+    private func restore() {
+        Task { if await model.restore(candidate, mode: choice.mode) { dismiss() } }
     }
 
     private var footer: String {

@@ -1,5 +1,6 @@
 #if DEBUG
 import Foundation
+import os
 import GearCore
 
 /// Skriptbare Quelle für App- und UI-Tests (nur Debug): berührt nie HealthKit. Der Anker zählt die schon
@@ -8,17 +9,40 @@ actor DebugHealthSource: HealthWorkoutSource {
     private let batches: [ImportBatch]
     private var errors: [HealthSourceError]
     private let authorizationError: HealthSourceError?
-    /// Verzögert jede Abfrage, damit Lade- und Wartezustände sichtbar werden.
-    private let delay: Duration
+    /// Hält die erste Abfrage fest, bis der UI-Test sie freigibt (`DebugHealthSource.releaseName`): Lade- und Wartezustände
+    /// bleiben so lange sichtbar, wie der Test sie braucht, unabhängig von der Last des Rechners. Ohne Freigabe endet das
+    /// Warten nach `maxHold`, damit ein von Hand gestarteter Lauf nicht hängen bleibt.
+    private let isHeld: Bool
+    private let maxHold: Duration = .seconds(120)
+    private var observing = false
+    /// Wird vom C-Rückruf der Darwin-Mitteilung gesetzt (läuft auf beliebigem Thread, darum das Schloss).
+    private static let releaseFlag = OSAllocatedUnfairLock(initialState: false)
     private(set) var authorizationRequests = 0
     private(set) var isObserved = false
 
     init(batches: [ImportBatch], errors: [HealthSourceError] = [], authorizationError: HealthSourceError? = nil,
-         delay: Duration = .zero) {
+         held: Bool = false) {
         self.batches = batches
         self.errors = errors
         self.authorizationError = authorizationError
-        self.delay = delay
+        self.isHeld = held
+    }
+
+    /// Darwin-Mitteilung, mit der der UI-Test (anderer Prozess, gleicher Simulator) das Festhalten beendet.
+    static let releaseName = "de.linolaske.eingelaufen.uitest.releaseHealth"
+
+    private func hold() async throws {
+        guard isHeld else { return }
+        if !observing {
+            observing = true
+            CFNotificationCenterAddObserver(CFNotificationCenterGetDarwinNotifyCenter(), nil, { _, _, _, _, _ in
+                DebugHealthSource.releaseFlag.withLock { $0 = true }
+            }, Self.releaseName as CFString, nil, .deliverImmediately)
+        }
+        let deadline = ContinuousClock.now + maxHold
+        while !Self.releaseFlag.withLock({ $0 }) && ContinuousClock.now < deadline {
+            try await Task.sleep(for: .milliseconds(100))
+        }
     }
 
     func requestAuthorization() async throws {
@@ -27,7 +51,7 @@ actor DebugHealthSource: HealthWorkoutSource {
     }
 
     func fetchChanges(since: Date?, anchor: Data?) async throws -> WorkoutChanges {
-        if delay > .zero { try await Task.sleep(for: delay) }
+        try await hold()
         if !errors.isEmpty { throw errors.removeFirst() }
         let i = anchor.flatMap { Int(String(decoding: $0, as: UTF8.self)) } ?? 0
         guard i < batches.count else { return WorkoutChanges(batch: ImportBatch(), anchor: anchor) }
@@ -56,9 +80,9 @@ actor DebugHealthSource: HealthWorkoutSource {
         case "later":
             DebugHealthSource(batches: [ImportBatch(), ImportBatch(upserts: [ride])])
         case "slow":
-            DebugHealthSource(batches: [ImportBatch(upserts: [ride])], delay: .seconds(6))
+            DebugHealthSource(batches: [ImportBatch(upserts: [ride])], held: true)
         case "slow-error":
-            DebugHealthSource(batches: [], errors: [.failed("test")], delay: .seconds(6))
+            DebugHealthSource(batches: [], errors: [.failed("test")], held: true)
         case "unavailable":
             DebugHealthSource(batches: [], authorizationError: .unavailable)
         default:

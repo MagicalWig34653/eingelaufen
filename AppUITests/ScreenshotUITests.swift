@@ -236,6 +236,11 @@ final class ScreenshotUITests: XCTestCase {
         XCTAssertTrue(app.element(id: "previewCount.gear").waitForExistence(timeout: 15))
         XCTAssertTrue(app.element(id: "previewCount.gear").label.contains("abweichend"), app.element(id: "previewCount.gear").label)
         shot(app, "\(tag)-m8-6-vorschau")
+        // Karte F33E735D: „Bestand ersetzen“ ist vorgewählt; Importieren fragt vorher nach.
+        app.buttons["restoreConfirm"].tap()
+        XCTAssertTrue(app.sheets.firstMatch.buttons["restoreReplaceConfirm"].firstMatch.waitForExistence(timeout: 5))
+        shot(app, "\(tag)-m8-8-ersetzen-rueckfrage")
+        closeDialog()
         app.swipeUp()
         app.buttons["Zusammenführen, Bestand gewinnt"].firstMatch.tap()
         shot(app, "\(tag)-m8-7-vorschau-modus")
