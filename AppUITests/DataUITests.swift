@@ -69,4 +69,50 @@ final class DataUITests: XCTestCase {
         XCTAssertTrue(app.buttons["gear.Canyon Endurace"].waitForExistence(timeout: 8), "Wiederhergestellt")
         XCTAssertTrue(app.buttons["gear.Tennisschläger"].exists)
     }
+
+    /// Karte F33E735D: „Bestand ersetzen“ bleibt vorgewählt, fragt bei vorhandenem Bestand aber vorher nach.
+    /// Abbrechen (Tipp neben den Dialog) ändert nichts, Bestätigen ersetzt. Ende zu Ende über die Dateidialoge.
+    @MainActor
+    func testReplaceAsksBeforeDiscardingExistingData() {
+        let app = launch("basic")
+        app.buttons["settingsButton"].tapWhenReady()
+        app.tapRevealed(app.buttons["exportBackup"])
+        app.sheets.firstMatch.buttons["exportConfirm"].firstMatch.tapWhenReady()
+        saveInFilesPicker(app)
+        app.buttons["settingsDone"].tapWhenReady()
+
+        // Nach dem Export ein Teil löschen: Ersetzen brächte es zurück, Abbrechen nicht.
+        app.tabBars.buttons["Ausrüstung"].tapWhenReady()
+        app.buttons["gear.Tennisschläger"].tapWhenReady()
+        app.tapRevealed(app.buttons["detailDelete"])
+        app.sheets.firstMatch.buttons["confirmDeleteGear"].firstMatch.tapWhenReady()
+        XCTAssertTrue(app.buttons["gear.Canyon Endurace"].waitForExistence(timeout: 8))
+        XCTAssertFalse(app.buttons["gear.Tennisschläger"].exists)
+
+        func openPreview() {
+            app.buttons["settingsButton"].tapWhenReady()
+            app.tapRevealed(app.buttons["importBackup"])
+            openFromFilesPicker(app)
+            XCTAssertTrue(app.navigationBars["Vorschau"].waitForExistence(timeout: 15), "Vorschau nach der Dateiauswahl")
+            XCTAssertTrue(app.buttons["Bestand ersetzen"].firstMatch.isSelected, "Vorauswahl bleibt „Bestand ersetzen“")
+            app.buttons["restoreConfirm"].tapWhenReady()
+        }
+        let replace = app.sheets.firstMatch.buttons["restoreReplaceConfirm"].firstMatch
+
+        openPreview()
+        XCTAssertTrue(replace.waitForExistence(timeout: 5), "Rückfrage vor dem Ersetzen des Bestands")
+        XCTAssertTrue(app.element(labelContaining: "nicht rückgängig").exists, "Rückfrage nennt die Folge")
+        dismissDialog(app)
+        XCTAssertTrue(app.navigationBars["Vorschau"].exists, "Abbrechen lässt die Vorschau offen")
+        app.buttons["previewCancel"].tapWhenReady()
+        app.buttons["settingsDone"].tapWhenReady()
+        XCTAssertTrue(app.buttons["gear.Canyon Endurace"].waitForExistence(timeout: 8))
+        XCTAssertFalse(app.buttons["gear.Tennisschläger"].exists, "Abbrechen hat nichts ersetzt")
+
+        openPreview()
+        replace.tapWhenReady(timeout: 5)
+        XCTAssertTrue(app.navigationBars["Einstellungen"].waitForExistence(timeout: 10))
+        app.buttons["settingsDone"].tapWhenReady()
+        XCTAssertTrue(app.buttons["gear.Tennisschläger"].waitForExistence(timeout: 8), "Bestätigen ersetzt den Bestand")
+    }
 }

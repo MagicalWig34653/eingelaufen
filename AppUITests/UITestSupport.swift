@@ -120,6 +120,24 @@ extension XCUIElement {
 }
 
 extension XCTestCase {
+    /// Bestätigungsdialoge erscheinen als Popover ohne „Abbrechen“: ein Tipp daneben bricht ab.
+    @MainActor
+    func dismissDialog(_ app: XCUIApplication, file: StaticString = #filePath, line: UInt = #line) {
+        let outside = app.element(id: "PopoverDismissRegion")
+        if outside.exists { outside.tap() } else { app.coordinate(withNormalizedOffset: CGVector(dx: 0.02, dy: 0.5)).tap() }
+        XCTAssertTrue(app.sheets.firstMatch.waitForNonExistence(timeout: 5), "Dialog schließt nicht", file: file, line: line)
+    }
+
+    /// Fake-Trainingsquelle (Debug, Szenarien `slow`/`slow-error`): Der Abgleich läuft, bis der Test ihn freigibt.
+    /// Darwin-Mitteilung, weil Test und App getrennte Prozesse im selben Simulator sind.
+    func releaseHealthSync() {
+        CFNotificationCenterPostNotification(CFNotificationCenterGetDarwinNotifyCenter(),
+                                             CFNotificationName("de.linolaske.eingelaufen.uitest.releaseHealth" as CFString),
+                                             nil, nil, true)
+    }
+}
+
+extension XCTestCase {
     // MARK: Systemdialoge (Dateien)
 
     /// Sichern-Dialog von `fileExporter`: Ort „Auf meinem iPhone“ und „Sichern“.

@@ -227,6 +227,8 @@ public struct BackupPreview: Equatable, Sendable {
     public var issues: [BackupIssue]
     /// Je Typ: neu, unverändert, Konflikt (nur Typen mit Einträgen im Backup).
     public var summary: [BackupEntity: BackupEntityChange]
+    /// „Bestand ersetzen“ würde vorhandene Daten verwerfen (Karte F33E735D: dann fragt die App vorher nach).
+    public var replaceDiscardsExisting = false
     public var hasConflicts: Bool { !conflicts.isEmpty }
 }
 
@@ -286,6 +288,14 @@ public enum BackupRestore {
         compare(.maintenanceRule, e.maintenanceRules, b.maintenanceRules)
         compare(.assignmentRule, e.assignmentRules, b.assignmentRules); compare(.pending, e.pendings, b.pendings)
         return BackupPreview(counts: counts, conflicts: conflicts, issues: BackupValidator.validate(document), summary: summary)
+    }
+
+    /// Eigener Bestand = alles außer den Sportarten, die das Onboarding anlegt (sonst fragte jede frische Installation nach).
+    /// Auch ein vom Nutzer gelöschtes Training zählt: Ersetzen würde es zurückbringen.
+    static func hasUserData(_ d: GearDataset) -> Bool {
+        !(d.gear.isEmpty && d.statusChanges.isEmpty && d.installations.isEmpty && d.presets.isEmpty && d.activities.isEmpty
+          && d.segments.isEmpty && d.assignments.isEmpty && d.maintenanceEvents.isEmpty && d.maintenanceRules.isEmpty
+          && d.assignmentRules.isEmpty && d.pendings.isEmpty)
     }
 
     /// Liefert den neuen Bestand oder wirft; bei einem Fehler bleibt der vorhandene Bestand unverändert.

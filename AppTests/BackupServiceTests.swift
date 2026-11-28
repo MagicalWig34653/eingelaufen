@@ -41,6 +41,21 @@ import Testing
         #expect(try await target.persistence.outbox(pendingOnly: true).last?.kind == .dataReplaced)
     }
 
+    @Test("Karte F33E735D: Vorschau meldet, ob Ersetzen einen Bestand verwirft (nach dem Onboarding allein nicht)")
+    func previewFlagsReplacingExistingData() async throws {
+        let (source, _) = try await seeded()
+        let bytes = try await source.export(includePhotos: false, now: day(10))
+        #expect(try await source.preview(bytes).preview.replaceDiscardsExisting, "eigener Bestand")
+
+        let fresh = BackupService(persistence: try makePersistence(), media: tempMedia())
+        _ = try await fresh.persistence.apply(.completeOnboarding(OnboardingChoice(categories: [.cycling, .running], health: .later)), now: t0)
+        #expect(!(try await fresh.persistence.dataset().sportProfiles.isEmpty), "Onboarding legt Sportarten an")
+        #expect(!(try await fresh.preview(bytes).preview.replaceDiscardsExisting), "nur Onboarding: keine Rückfrage")
+
+        _ = try await fresh.persistence.apply(.createGear(GearItem(name: "Helm", category: .cycling)), now: t0)
+        #expect(try await fresh.preview(bytes).preview.replaceDiscardsExisting, "ein eigenes Teil genügt")
+    }
+
     @Test("Export ohne Fotos: Datei ohne Bilder, Fotopfad bleibt, Vorschau warnt, Import ist möglich")
     func exportWithoutPhotos() async throws {
         let (source, _) = try await seeded()

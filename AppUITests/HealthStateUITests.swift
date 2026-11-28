@@ -77,16 +77,24 @@ final class HealthStateUITests: XCTestCase {
         shot(app, "\(tag)-leer-3-nachher")
     }
 
+    /// Ursache der früheren Instabilität (Lauf 27.11. 20:45, Last durch parallele Läufe): Die Fake-Quelle hielt den Abgleich
+    /// nur 6 s fest, der Test las „gesperrt“ irgendwann danach; eine einzige XCUI-Abfrage dauerte unter Last ~7 s, das
+    /// Fenster war dann vorbei. Jetzt endet der Abgleich erst, wenn der Test ihn freigibt (`releaseHealthSync`).
     @MainActor
     func testBusyAndWaitingOnlyWhileSyncing() {
         let app = settings("slow")
         shot(app, "\(tag)-laden-1-vorher")
         app.tapRevealed(app.buttons["healthConnect"])
         let sync = app.buttons["healthSync"]
-        XCTAssertTrue(sync.waitForExistence(timeout: 8))
+        XCTAssertTrue(sync.waitForExistence(timeout: 20))
         XCTAssertFalse(sync.isEnabled, "während des Abgleichs gesperrt")
         appears(app, "Abgleich steht aus")
         shot(app, "\(tag)-laden-2-waehrend")
+        // Die Anzeige hängt am Abgleich, nicht an einer Uhr: auch lange ohne Freigabe bleibt alles gesperrt.
+        Thread.sleep(forTimeInterval: 8)
+        XCTAssertFalse(sync.isEnabled, "ohne Freigabe weiter gesperrt")
+        XCTAssertTrue(app.element(labelContaining: "Abgleich steht aus").exists, "ohne Freigabe weiter „Abgleich steht aus“")
+        releaseHealthSync()
         becomesEnabled(sync)
         appears(app, "Abgeglichen")
         disappears(app, "Abgleich steht aus")
@@ -98,8 +106,9 @@ final class HealthStateUITests: XCTestCase {
         let app = settings("slow-error")
         app.tapRevealed(app.buttons["healthConnect"])
         let sync = app.buttons["healthSync"]
-        XCTAssertTrue(sync.waitForExistence(timeout: 8))
+        XCTAssertTrue(sync.waitForExistence(timeout: 20))
         XCTAssertFalse(sync.isEnabled)
+        releaseHealthSync()
         becomesEnabled(sync)
         appears(app, "Abgleich fehlgeschlagen")
         disappears(app, "Abgleich steht aus")

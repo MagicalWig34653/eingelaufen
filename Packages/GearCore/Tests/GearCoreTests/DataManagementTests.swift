@@ -102,6 +102,34 @@ struct BackupPreviewSummaryTests {
         #expect(preview.hasConflicts)
         #expect(!BackupRestore.preview(BackupDocument(exportedAt: day(40), data: richDataset()), against: GearDataset()).hasConflicts)
     }
+
+    /// Karte F33E735D: „Bestand ersetzen“ ist vorgewählt; vor dem Ersetzen eines vorhandenen Bestands fragt die App nach.
+    @Test("Ersetzen verwirft nur dann etwas, wenn ein Bestand da ist; Sportarten aus dem Onboarding zählen nicht")
+    func replaceDiscardsExisting() {
+        let backup = BackupDocument(exportedAt: day(40), data: richDataset())
+        #expect(!BackupRestore.preview(backup, against: GearDataset()).replaceDiscardsExisting, "leerer Bestand")
+
+        var onboarded = GearDataset()
+        onboarded.sportProfiles = [SportProfile(sportType: SportType(rawValue: 37))]
+        #expect(!BackupRestore.preview(backup, against: onboarded).replaceDiscardsExisting, "nur Sportarten aus dem Onboarding")
+
+        #expect(BackupRestore.preview(backup, against: richDataset()).replaceDiscardsExisting, "voller Bestand, auch wenn gleich")
+
+        var gearOnly = GearDataset()
+        gearOnly.gear = [richDataset().gear[0]]
+        #expect(BackupRestore.preview(backup, against: gearOnly).replaceDiscardsExisting, "ein Ausrüstungsteil")
+
+        var tombstone = GearDataset()
+        var deleted = richDataset().activities[0]
+        deleted.deletedAt = day(30)
+        tombstone.activities = [deleted]
+        #expect(BackupRestore.preview(backup, against: tombstone).replaceDiscardsExisting,
+                "auch ein vom Nutzer gelöschtes Training ist Bestand (es soll gelöscht bleiben)")
+
+        var rulesOnly = GearDataset()
+        rulesOnly.maintenanceRules = richDataset().maintenanceRules
+        #expect(BackupRestore.preview(backup, against: rulesOnly).replaceDiscardsExisting, "eine Wartungsregel")
+    }
 }
 
 @Suite("Löschen (SPEC 11)")
