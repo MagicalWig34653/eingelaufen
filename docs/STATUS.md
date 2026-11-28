@@ -55,7 +55,8 @@
 - In der App gelöschte Health-Aktivitäten bleiben als Grabstein mit `removedByUser` gelöscht (kein Wiederbeleben durch Neuabgleich). Meldet Health eine Änderung als Löschen + neue UUID, kommt das Training als neu herein. Eine Rücknahme in der App gibt es nicht.
 - `removedByUser` steht in `SchemaV2.ActivityEntity` (V2 war noch nie ausgeliefert, V1 → V2 bleibt leichtgewichtig). Ein Simulator mit einem älteren V2-Entwicklungsstand braucht eine Neuinstallation.
 - Wiederherstellen verwirft den Health-Anker; der nächste Abgleich holt Trainings nach, die dem Backup fehlen (idempotent über die Quell-ID).
-- „Alle App-Daten löschen“ setzt auch Einstellungen, Health-Anker und Mitteilungsprotokoll zurück; die Health-Freigabe selbst verwaltet iOS. Der Import-Modus ist standardmäßig „Bestand ersetzen“.
+- „Alle App-Daten löschen“ setzt auch Einstellungen, Health-Anker und Mitteilungsprotokoll zurück; die Health-Freigabe selbst verwaltet iOS. Der Import-Modus ist standardmäßig „Bestand ersetzen“; seit 28.11. fragt die App davor nach, wenn eigener Bestand da ist (`BackupPreview.replaceDiscardsExisting`: alles außer den Sportarten aus dem Onboarding; Karte F33E735D, Bilder `docs/screenshots/m8/*-m8-8-ersetzen-rueckfrage.png`).
+- `HealthStateUITests` war zeitabhängig (28.11. behoben): Die Fake-Quelle „slow“ hielt den Abgleich nur 6 s fest, im Lauf vom 27.11. 20:45 dauerte eine einzelne XCUI-Abfrage rund 7 s und das Fenster war vorbei. Jetzt endet der Abgleich erst, wenn der Test ihn freigibt (Darwin-Mitteilung), der Test prüft zusätzlich 8 s ohne Freigabe. Beleg auf 3916ed9: 3 Läufe hintereinander je 7/7 grün (07:35–07:43), danach volle UI-Suite 53/53 (07:43–08:06).
 - Kein neues Designelement: Abschnitt „Daten“ und Vorschau als Form im bestehenden Stil, Löschen als rote Taste mit Bestätigungsdialog wie „Archivieren“.
 
 ## M6 Grenzen und Abweichungen (27.11.)

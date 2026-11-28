@@ -177,7 +177,7 @@ Reihenfolge exakt nach Spec 6.2; Konfidenz-Enum `explicit/high/medium/low/none`,
 
 ## 7. Datensicherung (Spec 11, T-14)
 - `BackupDocument` v1: `formatVersion`, `appSchemaVersion`, `exportedAt`, alle Wahrheits-Entitäten (nicht das Ledger, es wird nach Import neu gebaut), optional Fotos als `media`-Liste (relativer Pfad + Base64) in derselben `.json`-Datei; kein ZIP (M8).
-- Import: Validierung (Version, Referenzen, Invarianten I-01…I-09) → Vorschau (Anzahl je Typ, Konflikte) → Modus „Ersetzen“ oder „Zusammenführen nach ID“ → ein Commit (Ledger neu, Health-Anker verworfen) → Fotos schreiben und aufräumen.
+- Import: Validierung (Version, Referenzen, Invarianten I-01…I-09) → Vorschau (Anzahl je Typ, Konflikte) → Modus „Ersetzen“ oder „Zusammenführen nach ID“ → bei „Ersetzen“ und vorhandenem eigenem Bestand eine Rückfrage → ein Commit (Ledger neu, Health-Anker verworfen) → Fotos schreiben und aufräumen.
 - Export-Hinweis „unverschlüsselt, enthält Trainingsdaten“. HealthKit-abgeleitete Daten verlassen das Gerät nur durch ausdrückliche Nutzeraktion.
 
 ---
