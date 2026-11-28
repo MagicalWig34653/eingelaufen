@@ -14,7 +14,6 @@ actor DebugHealthSource: HealthWorkoutSource {
     /// Warten nach `maxHold`, damit ein von Hand gestarteter Lauf nicht hängen bleibt.
     private let isHeld: Bool
     private let maxHold: Duration = .seconds(120)
-    private var observing = false
     /// Wird vom C-Rückruf der Darwin-Mitteilung gesetzt (läuft auf beliebigem Thread, darum das Schloss).
     private static let releaseFlag = OSAllocatedUnfairLock(initialState: false)
     private(set) var authorizationRequests = 0
@@ -26,6 +25,12 @@ actor DebugHealthSource: HealthWorkoutSource {
         self.errors = errors
         self.authorizationError = authorizationError
         self.isHeld = held
+        // Schon beim Erzeugen anmelden: Eine Freigabe vor der ersten Abfrage darf nicht verloren gehen.
+        if held {
+            CFNotificationCenterAddObserver(CFNotificationCenterGetDarwinNotifyCenter(), nil, { _, _, _, _, _ in
+                DebugHealthSource.releaseFlag.withLock { $0 = true }
+            }, Self.releaseName as CFString, nil, .deliverImmediately)
+        }
     }
 
     /// Darwin-Mitteilung, mit der der UI-Test (anderer Prozess, gleicher Simulator) das Festhalten beendet.
@@ -33,12 +38,6 @@ actor DebugHealthSource: HealthWorkoutSource {
 
     private func hold() async throws {
         guard isHeld else { return }
-        if !observing {
-            observing = true
-            CFNotificationCenterAddObserver(CFNotificationCenterGetDarwinNotifyCenter(), nil, { _, _, _, _, _ in
-                DebugHealthSource.releaseFlag.withLock { $0 = true }
-            }, Self.releaseName as CFString, nil, .deliverImmediately)
-        }
         let deadline = ContinuousClock.now + maxHold
         while !Self.releaseFlag.withLock({ $0 }) && ContinuousClock.now < deadline {
             try await Task.sleep(for: .milliseconds(100))
